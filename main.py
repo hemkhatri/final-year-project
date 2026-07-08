@@ -1,0 +1,1 @@
+print("This is our 7th sem project")
