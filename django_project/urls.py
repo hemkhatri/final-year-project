@@ -15,27 +15,30 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 # django_project/urls.py
+# django_project/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
-from accounts.views import SellerDashboardView, SignUpView  # <-- Make sure SignUpView is imported!
+from accounts.views import SellerDashboardView, SignUpView
+from shop.views import ProductListView # Make sure this is available
 
-# Your dynamic landing router
 def root_redirect_view(request):
+    # If not logged in, let them browse the marketplace anonymously!
     if not request.user.is_authenticated:
-        return redirect('login')
+        return ProductListView.as_view()(request)
+        
+    # If they are a Seller, divert them to their management dashboard
     if request.user.role == "SELLER":
         return redirect('seller_dashboard')
-    return redirect('login') 
+        
+    # If they are a Customer, keep them on the storefront marketplace feed
+    return ProductListView.as_view()(request)
 
 urlpatterns = [
     path('', root_redirect_view, name='root_redirect'),
     path('admin/', admin.site.urls),
     path('dashboard/seller/', SellerDashboardView.as_view(), name='seller_dashboard'),
-    
-    # 1. Explicitly add the signup route here:
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
-    
-    # 2. Then include the built-in authentication views:
     path('accounts/', include('django.contrib.auth.urls')), 
+    path('shop/', include('shop.urls')), # Kept for explicit sub-routing if needed
 ]

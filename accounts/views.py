@@ -4,39 +4,44 @@ from django.views.generic import TemplateView
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from .forms import CustomUserCreationForm
-
+from shop.models import Product  # Imported to pull actual inventory database items
 
 class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    # Specify the template file location
     template_name = 'dashboard/seller.html'
 
     def test_func(self):
         """
-        UserPassesTestMixin runs this method. 
-        If it returns True, access is granted. Otherwise, it triggers a 403 Forbidden error.
+        Locks down this view to SELLER profiles only.
         """
         return self.request.user.is_authenticated and self.request.user.role == "SELLER"
 
     def get_context_data(self, **kwargs):
         """
-        Pass role-specific metrics or information into your dashboard view context.
+        Pass real, functional database telemetry into the dashboard workspace context panels.
         """
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         
-        # Access profile data seamlessly via the related_name we fixed earlier
-        seller_profile = self.request.user.seller_profile
+        # Pull profile specifics safely using getattr to avoid errors if the relationship doesn't exist yet
+        seller_profile = getattr(user, 'seller_profile', None)
+        context['store_name'] = seller_profile.store_name if seller_profile else "My Store Front"
+        # Handles your database spelling 'business_licence' seamlessly
+        context['business_license'] = seller_profile.business_licence if seller_profile else "N/A"
         
-        context['store_name'] = seller_profile.store_name
-        context['business_license'] = seller_profile.business_licence
+        # 1. Fetch real products that belong to this seller from the database (Ordered by newest first)
+        seller_products = Product.objects.filter(seller=user).order_by('-created')
+        context['products'] = seller_products
         
-        # Mock metrics for layout visualization
-        context['total_sales'] = "$12,450.00"
-        context['active_listings'] = 24
+        # 2. Compute dynamic listing data metric properties instantly
+        context['active_listings'] = seller_products.count()
+        
+        # 3. Dynamic layout string formatting (Placeholder for real checkout/order aggregation formulas later)
+        context['total_sales'] = "$0.00"
         
         return context
 
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
-    success_url = reverse_lazy('login') # Redirects to login page after successful signup
+    success_url = reverse_lazy('login') 
     template_name = 'registration/signup.html'

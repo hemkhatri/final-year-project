@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Explore Marketplace{% endblock %}
+
+{% block body_content %}
+<div class="space-y-6">
+    <!-- Dynamic Welcome Banner based on Role -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-xs">
+        {% if user.is_authenticated and user.role == "CUSTOMER" %}
+            <h1 class="text-2xl md:text-3xl font-black">Hi {{ user.username }}, ready to shop? 🛒</h1>
+            <p class="text-indigo-100 text-sm mt-1">Check out today's top picks from our verified merchants below.</p>
+        {% else %}
+            <h1 class="text-2xl md:text-3xl font-black">Welcome to the Marketplace ✨</h1>
+            <p class="text-indigo-100 text-sm mt-1">Discover items listed directly by approved platform merchants.</p>
+        {% endif %}
+    </div>
+
+    <!-- The Product Layout Shelf -->
+    {% if products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for product in products %}
+        <div class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+            
+            <div>
+                <!-- Cover Image Placement -->
+                <div class="w-full h-48 bg-gray-100 overflow-hidden relative">
+                   <img src="{{ product.cover_image|default:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500' }}" 
+                        alt="{{ product.name }}" 
+                        class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
+                    <span class="absolute top-2 right-2 bg-white/95 backdrop-blur-xs text-xs font-bold px-2.5 py-1 rounded-full text-indigo-600 shadow-xs">
+                        {{ product.category.name }}
+                    </span>
+                </div>
+
+                <!-- Descriptive Information Body -->
+                <div class="p-4 space-y-1">
+                    <h3 class="font-bold text-gray-800 text-base truncate">{{ product.name }}</h3>
+                    <p class="text-xs text-gray-400">Merchant: {{ product.seller.seller_profile.store_name|default:product.seller.username }}</p>
+                    <p class="text-xs text-gray-500 line-clamp-2 mt-2">{{ product.description }}</p>
+                </div>
+            </div>
+
+            <!-- Context Actions Foot Panel -->
+            <div class="p-4 pt-0">
+                <div class="flex items-center justify-between pt-3 border-t border-gray-50">
+                    <span class="text-lg font-black text-gray-900">${{ product.price }}</span>
+                    <a href="{% url 'product_detail' product.pk %}" class="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-md transition-colors shadow-xs">
+                        View Details
+                    </a>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
+        <p class="text-gray-400 font-medium">No items listed on the store shelves yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

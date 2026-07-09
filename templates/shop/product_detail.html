@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load media_tags %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block body_content %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl mx-auto p-4 md:p-8 my-6">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+        <!-- ================= LEFT MEDIA PANEL (7 COLS) ================= -->
+        <div class="md:col-span-7 space-y-4">
+
+            <div id="mainShowcaseWindow" class="bg-gray-50 rounded-xl overflow-hidden h-80 sm:h-96 md:h-[420px] border border-gray-100 relative shadow-inner group/theater">
+
+                <!-- Image slot -->
+                <img id="theaterImage" src="" class="w-full h-full object-cover hidden cursor-zoom-in">
+
+                <!-- Video slot: IFrame API mounts into #ytPlayerMount. Never touch this div's innerHTML directly. -->
+                <div id="ytPlayerWrap" class="w-full h-full hidden relative">
+                    <div id="ytPlayerMount" class="w-full h-full"></div>
+                    <div id="videoFallback" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white text-sm gap-2 p-4 text-center">
+                        <span>This video can't be played here.</span>
+                        <a id="videoFallbackLink" href="#" target="_blank" rel="noopener" class="underline text-indigo-300 hover:text-indigo-200">Watch on YouTube instead</a>
+                    </div>
+                </div>
+
+                {% if product.media.all|length > 1 %}
+                <button type="button" id="prevMediaBtn" aria-label="Previous"
+                    class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
+                    <span class="text-xl leading-none">&lsaquo;</span>
+                </button>
+                <button type="button" id="nextMediaBtn" aria-label="Next"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
+                    <span class="text-xl leading-none">&rsaquo;</span>
+                </button>
+                {% endif %}
+            </div>
+
+            {% if product.media.all %}
+            <div class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
+                {% for asset in product.media.all %}
+                    <button type="button"
+                            class="media-thumb-node relative flex-none w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 {% if forloop.first %}border-indigo-600{% else %}border-gray-200{% endif %} hover:border-indigo-400 transition bg-white"
+                            data-type="{{ asset.media_type }}"
+                            {% if asset.media_type == 'VIDEO' %}
+                                data-video-id="{{ asset.url|youtube_id }}"
+                            {% else %}
+                                data-image-url="{{ asset.url }}"
+                            {% endif %}>
+
+                        {% if asset.media_type == 'VIDEO' %}
+                            <img src="https://img.youtube.com/vi/{{ asset.url|youtube_id }}/mqdefault.jpg" class="w-full h-full object-cover brightness-90">
+                            <div class="absolute inset-0 flex items-center justify-center text-xs bg-black/20 text-white drop-shadow-sm">▶️</div>
+                        {% else %}
+                            <img src="{{ asset.url }}" class="w-full h-full object-cover">
+                        {% endif %}
+                    </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ================= RIGHT STRUCTURAL DATA PANEL (5 COLS) ================= -->
+        <div class="md:col-span-5 flex flex-col justify-between space-y-6">
+            <div class="space-y-4">
+                <div>
+                    <span class="inline-block text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                        {{ product.category.name }}
+                    </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{{ product.name }}</h1>
+
+                <p class="text-xs sm:text-sm text-gray-400">
+                    Sold by: <span class="font-bold text-gray-700 hover:text-indigo-600 transition cursor-pointer">{{ product.seller.seller_profile.store_name|default:product.seller.username }}</span>
+                </p>
+
+                <div class="text-3xl font-black text-gray-900 pt-1">${{ product.price }}</div>
+
+                <hr class="border-gray-100">
+
+                <div class="space-y-1">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Product Details</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{{ product.description }}</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-gray-50">
+                <div class="flex items-center gap-1.5 text-xs font-bold {% if product.stock > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                    <span class="inline-block w-2 h-2 rounded-full {% if product.stock > 0 %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+                    {% if product.stock > 0 %}{{ product.stock }} items available in stock{% else %}Out of stock{% endif %}
+                </div>
+
+                {% if user.is_authenticated and user.role == "CUSTOMER" %}
+                <button {% if product.stock == 0 %}disabled{% endif %} class="w-full bg-indigo-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-xs hover:bg-indigo-500 transition-all transform active:scale-[0.99]">
+                    Add to Shopping Cart
+                </button>
+                {% elif not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="block text-center w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-colors shadow-xs">
+                    Sign in to Purchase
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Fullscreen Lightbox (images only) -->
+<div id="imageLightbox" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4">
+    <button type="button" id="closeLightboxBtn" aria-label="Close"
+        class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xl transition">
+        ✕
+    </button>
+    <img id="lightboxImage" src="" class="max-w-full max-h-full object-contain rounded-lg">
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const thumbNodes = Array.from(document.querySelectorAll('.media-thumb-node'));
+    const theaterImg = document.getElementById('theaterImage');
+    const ytPlayerWrap = document.getElementById('ytPlayerWrap');
+    const videoFallback = document.getElementById('videoFallback');
+    const videoFallbackLink = document.getElementById('videoFallbackLink');
+    const prevBtn = document.getElementById('prevMediaBtn');
+    const nextBtn = document.getElementById('nextMediaBtn');
+    const lightbox = document.getElementById('imageLightbox');
+    const lightboxImg = document.getElementById('lightboxImage');
+    const closeLightboxBtn = document.getElementById('closeLightboxBtn');
+
+    const mediaList = thumbNodes.map(btn => ({
+        type: btn.getAttribute('data-type'),
+        url: btn.getAttribute('data-type') === 'VIDEO'
+            ? btn.getAttribute('data-video-id')   // bare 11-char ID now, not a full embed url
+            : btn.getAttribute('data-image-url')
+    }));
+
+    let currentIndex = 0;
+    let ytPlayer = null;
+    let ytApiReady = false;
+    let pendingVideoId = null; // if user navigates before API script finishes loading
+
+    // --- YouTube IFrame API bootstrap ---
+    window.onYouTubeIframeAPIReady = function() {
+        ytApiReady = true;
+        if (pendingVideoId) {
+            playVideo(pendingVideoId);
+            pendingVideoId = null;
+        }
+    };
+
+    function playVideo(videoId) {
+        videoFallback.classList.add('hidden');
+        document.getElementById('ytPlayerMount').classList.remove('hidden');
+
+        if (!ytApiReady) {
+            pendingVideoId = videoId;
+            return;
+        }
+
+        if (ytPlayer) {
+            ytPlayer.loadVideoById(videoId);
+            return;
+        }
+
+        ytPlayer = new YT.Player('ytPlayerMount', {
+            videoId: videoId,
+            playerVars: { rel: 0 },
+            events: {
+                'onError': function() {
+                    document.getElementById('ytPlayerMount').classList.add('hidden');
+                    videoFallback.classList.remove('hidden');
+                    videoFallbackLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+                }
+            }
+        });
+    }
+
+    function showMediaAt(index) {
+        if (mediaList.length === 0) return;
+        currentIndex = (index + mediaList.length) % mediaList.length;
+        const item = mediaList[currentIndex];
+
+        thumbNodes.forEach(btn => {
+            btn.classList.remove('border-indigo-600');
+            btn.classList.add('border-gray-200');
+        });
+        if (thumbNodes[currentIndex]) {
+            thumbNodes[currentIndex].classList.remove('border-gray-200');
+            thumbNodes[currentIndex].classList.add('border-indigo-600');
+        }
+
+        if (item.type === 'VIDEO') {
+            theaterImg.classList.add('hidden');
+            ytPlayerWrap.classList.remove('hidden');
+            playVideo(item.url);
+        } else {
+            ytPlayerWrap.classList.add('hidden');
+            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); // kill trailing audio
+            theaterImg.src = item.url;
+            theaterImg.classList.remove('hidden');
+        }
+    }
+
+    thumbNodes.forEach((button, idx) => {
+        button.addEventListener('click', () => showMediaAt(idx));
+    });
+
+    if (prevBtn) prevBtn.addEventListener('click', () => showMediaAt(currentIndex - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => showMediaAt(currentIndex + 1));
+
+    function openLightbox() {
+        if (theaterImg.classList.contains('hidden')) return; // only for the image slot
+        lightboxImg.src = theaterImg.src;
+        lightbox.classList.remove('hidden');
+        lightbox.classList.add('flex');
+    }
+
+    function closeLightbox() {
+        lightbox.classList.add('hidden');
+        lightbox.classList.remove('flex');
+        lightboxImg.src = "";
+    }
+
+    theaterImg.addEventListener('click', openLightbox);
+    closeLightboxBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+    // Initial render
+    if (mediaList.length > 0) {
+        showMediaAt(0);
+    }
+});
+</script>
+{% endblock %}
