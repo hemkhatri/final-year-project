@@ -16,7 +16,7 @@ import os
 
 load_dotenv()
 
-GROK_API_KEY = os.getenv("GROK_API_KEY", "").strip()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
