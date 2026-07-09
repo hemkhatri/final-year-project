@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}Marketplace Central{% endblock %}</title>
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,23 +45,55 @@
                 <!-- Right: Dynamic Auth Section (Desktop) -->
                 <div class="hidden md:flex items-center space-x-4">
                     {% if user.is_authenticated %}
-                    <span
-                        class="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium border border-gray-200 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Welcome, <strong class="text-gray-900">{{ user.username }}</strong>
-                        <span
-                            class="text-xs text-indigo-600 font-semibold uppercase bg-white px-1.5 py-0.5 rounded border border-gray-200">
-                            {{ user.role }}
-                        </span>
-                    </span>
+                    <!-- Container with Alpine.js dropdown state management -->
+                    <div class="relative inline-block text-left" x-data="{ open: false }">
 
-                    <form action="{% url 'logout' %}" method="post" class="inline">
-                        {% csrf_token %}
-                        <button type="submit"
-                            class="text-sm font-medium text-gray-500 hover:text-red-600 px-3 py-2 rounded-md transition-colors">
-                            Log Out
+                        <!-- Avatar Circle Trigger Button -->
+                        <button @click="open = !open" @click.outside="open = false"
+                            class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center uppercase shadow-xs hover:bg-blue-700 transition focus:outline-none cursor-pointer">
+                            {{ user.username|first }}
                         </button>
-                    </form>
+
+                        <!-- Dropdown Menu Panel -->
+                        <div x-show="open" x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-48 rounded-xl bg-white border border-gray-200 shadow-lg py-1 z-50 origin-top-right"
+                            style="display: none;">
+
+                            <!-- User Meta Header -->
+                            <div class="px-4 py-2 border-b border-gray-100">
+                                <p class="text-xs text-gray-400">Signed in as</p>
+                                <p class="text-sm font-bold text-gray-900 truncate">{{ user.username }}</p>
+                            </div>
+
+                            <!-- Dashboard Link Option -->
+                            <a href="#"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">
+                                🎛️ Dashboard
+                            </a>
+
+                            <!-- Settings Link Option -->
+                            <a href="#"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">
+                                ⚙️ Account Settings
+                            </a>
+
+                            <div class="border-t border-gray-100 my-1"></div>
+
+                            <!-- Logout Button Option -->
+                            <form action="{% url 'logout' %}" method="post" class="block w-full">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="w-full text-left px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer">
+                                    🚪 Log Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                     {% else %}
                     <a href="{% url 'login' %}"
                         class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
@@ -302,62 +335,62 @@
             return null;
         }
 
-       function assistantWidget() {
-    return {
-        open: false,
-        input: '',
-        loading: false,
-        messages: [
-            { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?', products: [] }
-        ],
+        function assistantWidget() {
+            return {
+                open: false,
+                input: '',
+                loading: false,
+                messages: [
+                    { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?', products: [] }
+                ],
 
-        async sendMessage() {
-            const text = this.input.trim();
-            if (!text || this.loading) return;
+                async sendMessage() {
+                    const text = this.input.trim();
+                    if (!text || this.loading) return;
 
-            this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
-            this.input = '';
-            this.loading = true;
-            this.scrollToBottom();
+                    this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
+                    this.input = '';
+                    this.loading = true;
+                    this.scrollToBottom();
 
-            try {
-                const res = await fetch("{% url 'assistant_chat' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                    body: JSON.stringify({ message: text }),
-                });
+                    try {
+                        const res = await fetch("{% url 'assistant_chat' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify({ message: text }),
+                        });
 
-                const data = await res.json();
+                        const data = await res.json();
 
-                if (!res.ok) {
-                    this.messages.push({ id: Date.now() + 1, role: 'assistant', text: data.error || "Something went wrong.", products: [] });
-                } else {
-                    this.messages.push({
-                        id: Date.now() + 1,
-                        role: 'assistant',
-                        text: data.message,
-                        products: data.products || []
+                        if (!res.ok) {
+                            this.messages.push({ id: Date.now() + 1, role: 'assistant', text: data.error || "Something went wrong.", products: [] });
+                        } else {
+                            this.messages.push({
+                                id: Date.now() + 1,
+                                role: 'assistant',
+                                text: data.message,
+                                products: data.products || []
+                            });
+                        }
+                    } catch (err) {
+                        this.messages.push({ id: Date.now() + 1, role: 'assistant', text: "Couldn't reach the assistant.", products: [] });
+                    } finally {
+                        this.loading = false;
+                        this.scrollToBottom();
+                    }
+                },  // <-- THIS COMMA is the critical part — easy to miss
+
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const box = this.$refs.messageBox;
+                        if (box) box.scrollTop = box.scrollHeight;
                     });
                 }
-            } catch (err) {
-                this.messages.push({ id: Date.now() + 1, role: 'assistant', text: "Couldn't reach the assistant.", products: [] });
-            } finally {
-                this.loading = false;
-                this.scrollToBottom();
             }
-        },  // <-- THIS COMMA is the critical part — easy to miss
-
-        scrollToBottom() {
-            this.$nextTick(() => {
-                const box = this.$refs.messageBox;
-                if (box) box.scrollTop = box.scrollHeight;
-            });
         }
-    }
-}
     </script>
 
 </body>

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Seller Central Workspace{% endblock %}
+
+{% block main_wrapper %}
+<div class="flex h-screen overflow-hidden" x-data="{ currentTab: 'dashboard' }">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="w-64 bg-indigo-900 text-white flex flex-col justify-between hidden md:flex">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold tracking-wider mb-8">Seller Central</h1>
+            <nav class="space-y-2">
+                <button @click="currentTab = 'dashboard'" 
+                        :class="currentTab === 'dashboard' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    📊 Dashboard
+                </button>
+                <button @click="currentTab = 'products'" 
+                        :class="currentTab === 'products' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    📦 My Products
+                </button>
+                <button @click="currentTab = 'orders'" 
+                        :class="currentTab === 'orders' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    📑 Orders
+                </button>
+            </nav>
+        </div>
+        <div class="p-6 border-t border-indigo-800 text-sm text-indigo-300">
+            Store: <span class="block font-medium text-white text-base">{{ store_name|default:"Apex Storefront" }}</span>
+        </div>
+    </div>
+
+    <!-- MAIN APP CANVAS WORKSPACE -->
+    <div class="flex-1 flex flex-col overflow-y-auto">
+        
+        <!-- COMPONENT CHIPS INJECTED HERE -->
+        <!-- Each individual template handles its own header title block dynamically -->
+        <!-- COMPONENT CHIPS INJECTED HERE -->
+        {% include 'dashboard/seller/_seller_dashboard.html' %}
+        {% include 'dashboard/seller/_seller_products.html' %}
+        {% include 'dashboard/seller/_seller_orders.html' %}
+
+    </div>
+</div>
+{% endblock %}

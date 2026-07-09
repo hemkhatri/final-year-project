@@ -1,13 +1,14 @@
 # accounts/views.py
+import os
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from .forms import CustomUserCreationForm
-from shop.models import Product  # Imported to pull actual inventory database items
+from shop.models import Product, Category  # <-- add Category here
 
 class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'dashboard/seller.html'
+    template_name = 'dashboard/seller/seller.html'
 
     def test_func(self):
         """
@@ -37,6 +38,12 @@ class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         
         # 3. Dynamic layout string formatting (Placeholder for real checkout/order aggregation formulas later)
         context['total_sales'] = "$0.00"
+
+        # 4. Category options for the "Add New Product" form dropdown
+        context['categories'] = Category.objects.all()
+
+        # 5. ImgBB key for direct client-side image uploads
+        context['IMGBB_API_KEY'] = os.getenv('IMGBB_API_KEY', '')
         
         return context
 
