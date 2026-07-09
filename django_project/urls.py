@@ -41,4 +41,5 @@ urlpatterns = [
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
     path('accounts/', include('django.contrib.auth.urls')), 
     path('shop/', include('shop.urls')), # Kept for explicit sub-routing if needed
+    path("assistant/", include("assistant.urls")),
 ]

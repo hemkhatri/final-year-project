@@ -4,59 +4,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}My Project{% endblock %}</title>
+    <title>{% block title %}Marketplace Central{% endblock %}</title>
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AlpineJS for Interactive Nav Menus -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-100 font-sans tracking-wide min-h-screen flex flex-col">
+<body class="bg-gray-50 font-sans tracking-wide min-h-screen flex flex-col antialiased text-gray-900" x-data="{ mobileMenuOpen: false }">
 
     <!-- Global Navigation Header -->
-    <nav class="bg-white shadow-md border-b border-gray-200">
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 
-                <!-- Logo / Brand Title -->
-                <div class="flex-shrink-0">
-                    <a href="/" class="text-xl font-bold text-indigo-600 tracking-tight">Marketplace</a>
+                <!-- Left: Logo & Core Navigation Links -->
+                <div class="flex items-center space-x-8">
+                    <div class="flex-shrink-0">
+                        <a href="/" class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-2">
+                            <span>🛍️</span> Marketplace
+                        </a>
+                    </div>
+                    <!-- Desktop Links -->
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="#" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Explore</a>
+                        <a href="#" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
+                        {% if user.is_authenticated and user.role == 'seller' %}
+                            <a href="{% url 'seller_dashboard' %}" class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <!-- Dynamic Auth Section -->
-                <div class="flex items-center space-x-4">
+                <!-- Right: Dynamic Auth Section (Desktop) -->
+                <div class="hidden md:flex items-center space-x-4">
                     {% if user.is_authenticated %}
-                        <!-- UI elements shown only to Logged In Users -->
-                        <span class="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+                        <span class="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium border border-gray-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             Welcome, <strong class="text-gray-900">{{ user.username }}</strong> 
-                            <span class="text-xs text-indigo-500 uppercase ml-1">({{ user.role }})</span>
+                            <span class="text-xs text-indigo-600 font-semibold uppercase bg-white px-1.5 py-0.5 rounded border border-gray-200">
+                                {{ user.role }}
+                            </span>
                         </span>
 
-                        <!-- Security Warning: Log out links MUST use POST requests in modern Django frameworks -->
                         <form action="{% url 'logout' %}" method="post" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-500 transition-colors">
+                            <button type="submit" class="text-sm font-medium text-gray-500 hover:text-red-600 px-3 py-2 rounded-md transition-colors">
                                 Log Out
                             </button>
                         </form>
                     {% else %}
-                        <!-- UI elements shown only to Anonymous Guests -->
                         <a href="{% url 'login' %}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
                             Log In
                         </a>
-                        <a href="{% url 'signup' %}" class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-500 transition-colors">
+                        <a href="{% url 'signup' %}" class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition shadow-indigo-100">
                             Sign Up
                         </a>
                     {% endif %}
                 </div>
 
+                <!-- Mobile Menu Hamburger Button -->
+                <div class="flex items-center md:hidden">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" style="display: none;" />
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Mobile Expandable Dropdown Menu -->
+        <div x-show="mobileMenuOpen" x-collapse class="md:hidden border-t border-gray-100 bg-white shadow-inner" style="display: none;">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Explore</a>
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Categories</a>
+                {% if user.is_authenticated and user.role == 'seller' %}
+                    <a href="{% url 'seller_dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">Seller Panel</a>
+                {% endif %}
+            </div>
+            <div class="pt-4 pb-3 border-t border-gray-200 px-4 bg-gray-50/50">
+                {% if user.is_authenticated %}
+                    <div class="flex items-center mb-3">
+                        <div class="text-sm font-medium text-gray-800">{{ user.username }} <span class="text-xs text-gray-400">({{ user.role }})</span></div>
+                    </div>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full text-left block text-sm font-medium text-red-600">Log Out</button>
+                    </form>
+                {% else %}
+                    <div class="space-y-2">
+                        <a href="{% url 'login' %}" class="block text-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">Log In</a>
+                        <a href="{% url 'signup' %}" class="block text-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">Sign Up</a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </nav>
 
     <!-- Main Content Area Container -->
+    <!-- Use standard spacing unless overridden by child templates -->
+    {% block main_wrapper %}
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% block body_content %}
-        <!-- Child templates inject their layout structure here -->
-        {% endblock body_content %}
+        {% block body_content %}{% endblock body_content %}
     </main>
+    {% endblock main_wrapper %}
+
+    <!-- Global Footer -->
+    <footer class="bg-white border-t border-gray-200 text-sm mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Marketplace</h3>
+                    <ul class="space-y-2.5">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">About Us</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Press Release</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Selling</h3>
+                    <ul class="space-y-2.5">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Become a Seller</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Seller Guidelines</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Store Fees</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Resources</h3>
+                    <ul class="space-y-2.5">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Help Center</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">API Docs</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Safety Trust</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Legal</h3>
+                    <ul class="space-y-2.5">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Cookie Controls</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
+                <p>&copy; 2026 Marketplace Inc. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="hover:text-gray-600">Twitter</a>
+                    <a href="#" class="hover:text-gray-600">GitHub</a>
+                    <a href="#" class="hover:text-gray-600">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- AI Assistant Floating Button -->
+<div x-data="assistantWidget()" class="fixed bottom-6 right-6 z-50">
+
+    <!-- Chat Panel -->
+    <div x-show="open"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+         x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+         @click.outside="open = false"
+         class="absolute bottom-20 right-0 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+         style="display: none;">
+
+        <div class="bg-indigo-600 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-white">
+                <span class="text-lg">🤖</span>
+                <span class="font-semibold text-sm">Marketplace Assistant</span>
+            </div>
+            <button @click="open = false" class="text-white/80 hover:text-white">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <div x-ref="messageBox" class="p-4 h-72 overflow-y-auto text-sm bg-gray-50 space-y-3">
+            <template x-for="msg in messages" :key="msg.id">
+                <div :class="msg.role === 'user' ? 'text-right' : 'text-left'">
+                    <div :class="msg.role === 'user'
+                            ? 'inline-block bg-indigo-600 text-white rounded-lg px-3 py-2 max-w-[85%] text-left'
+                            : 'inline-block bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm max-w-[85%] text-gray-700'"
+                         x-text="msg.text">
+                    </div>
+                </div>
+            </template>
+
+            <!-- Typing indicator -->
+            <div x-show="loading" class="text-left">
+                <div class="inline-block bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-gray-400 text-xs">
+                    Thinking...
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <form @submit.prevent="sendMessage" class="p-3 border-t border-gray-100 bg-white">
+            <div class="flex items-center gap-2">
+                <input type="text" x-model="input" placeholder="Ask something..."
+                       :disabled="loading"
+                       class="flex-1 text-sm border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100">
+                <button type="submit" :disabled="loading || !input.trim()"
+                        class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-full p-2 transition">
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.94 2.94a1.5 1.5 0 011.66-.32l13 6a1.5 1.5 0 010 2.76l-13 6a1.5 1.5 0 01-2.08-1.72L3.7 10 2.52 4.66a1.5 1.5 0 01.42-1.72z" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Floating Toggle Button -->
+    <button @click="open = !open"
+            class="relative w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-300/50 flex items-center justify-center transition-transform hover:scale-105">
+        <span class="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-ping" x-show="!open"></span>
+        <span x-show="!open" class="relative text-2xl">🤖</span>
+        <svg x-show="open" class="relative h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
+</div>
+
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function assistantWidget() {
+        return {
+            open: false,
+            input: '',
+            loading: false,
+            messages: [
+                { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?' }
+            ],
+
+            async sendMessage() {
+                const text = this.input.trim();
+                if (!text || this.loading) return;
+
+                this.messages.push({ id: Date.now(), role: 'user', text: text });
+                this.input = '';
+                this.loading = true;
+                this.scrollToBottom();
+
+                try {
+                    const res = await fetch("{% url 'assistant_chat' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify({ message: text }),
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            text: data.error || "Sorry, something went wrong."
+                        });
+                    } else {
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            text: data.reply
+                        });
+                    }
+                } catch (err) {
+                    this.messages.push({
+                        id: Date.now() + 1,
+                        role: 'assistant',
+                        text: "Sorry, I couldn't reach the assistant right now."
+                    });
+                } finally {
+                    this.loading = false;
+                    this.scrollToBottom();
+                }
+            },
+
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const box = this.$refs.messageBox;
+                    if (box) box.scrollTop = box.scrollHeight;
+                });
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
 
 </body>
 </html>
