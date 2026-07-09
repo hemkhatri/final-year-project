@@ -1,0 +1,73 @@
+<!-- templates/dashboard/seller.html -->
+{% extends 'base.html' %}
+
+{% block title %}Seller Dashboard - {{ store_name }}{% endblock %}
+
+{% block body_content %}
+<div class="flex h-screen overflow-hidden">
+    
+    <!-- Sidebar Navigation -->
+    <div class="w-64 bg-indigo-900 text-white flex flex-col justify-between hidden md:flex">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold tracking-wider mb-8">Seller Central</h1>
+            <nav class="space-y-4">
+                <a href="#" class="block py-2.5 px-4 rounded bg-indigo-800 text-white font-semibold">Dashboard</a>
+                <a href="#" class="block py-2.5 px-4 rounded hover:bg-indigo-800 transition">My Products</a>
+                <a href="#" class="block py-2.5 px-4 rounded hover:bg-indigo-800 transition">Orders</a>
+            </nav>
+        </div>
+        <div class="p-6 border-t border-indigo-800">
+            <span class="block text-sm text-indigo-300">Logged in as:</span>
+            <!-- Accessing user object directly from the request context -->
+            <span class="block font-medium truncate">{{ request.user.username }}</span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content Area -->
+    <div class="flex-1 flex flex-col overflow-y-auto">
+        <!-- Header bar -->
+        <header class="bg-white shadow px-8 py-4 flex justify-between items-center">
+            <div>
+                <!-- Django template filter with fallback text -->
+                <h2 class="text-xl font-semibold text-gray-800">Welcome Back, {{ request.user.first_name|default:"Seller" }}!</h2>
+                <p class="text-sm text-gray-500">Manage your business storefront and inventory statistics.</p>
+            </div>
+            <div class="text-right">
+                <span class="block font-semibold text-gray-700">{{ store_name|default:"Unnamed Store" }}</span>
+                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full border">License: {{ business_license }}</span>
+            </div>
+        </header>
+
+        <!-- Grid Content Panels -->
+        <main class="p-8">
+            <!-- Metrics Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <span class="text-sm font-medium text-gray-400 uppercase">Gross Revenue</span>
+                    <span class="text-3xl font-bold text-gray-800 block mt-2">{{ total_sales }}</span>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <span class="text-sm font-medium text-gray-400 uppercase">Active Products</span>
+                    <span class="text-3xl font-bold text-gray-800 block mt-2">{{ active_listings }} Items</span>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <span class="text-sm font-medium text-gray-400 uppercase">Account Identity</span>
+                    <span class="text-md font-bold text-indigo-600 block mt-2 bg-indigo-50 px-3 py-1 rounded border border-indigo-200 w-max text-center">
+                        Verified {{ request.user.role }} Account
+                    </span>
+                </div>
+            </div>
+
+            <!-- Recent Activities Box Layout -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Store Overview & Actions</h3>
+                <div class="border-2 border-dashed border-gray-200 rounded-lg h-64 flex items-center justify-center text-gray-400">
+                    <!-- Django template comment placeholder -->
+                    {% comment %} Loop through actual database context items here later {% endcomment %}
+                    No dynamic products linked to context yet.
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock body_content %}

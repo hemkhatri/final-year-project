@@ -1,0 +1,62 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Project{% endblock %}</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans tracking-wide min-h-screen flex flex-col">
+
+    <!-- Global Navigation Header -->
+    <nav class="bg-white shadow-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                
+                <!-- Logo / Brand Title -->
+                <div class="flex-shrink-0">
+                    <a href="/" class="text-xl font-bold text-indigo-600 tracking-tight">Marketplace</a>
+                </div>
+
+                <!-- Dynamic Auth Section -->
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <!-- UI elements shown only to Logged In Users -->
+                        <span class="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+                            Welcome, <strong class="text-gray-900">{{ user.username }}</strong> 
+                            <span class="text-xs text-indigo-500 uppercase ml-1">({{ user.role }})</span>
+                        </span>
+
+                        <!-- Security Warning: Log out links MUST use POST requests in modern Django frameworks -->
+                        <form action="{% url 'logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-500 transition-colors">
+                                Log Out
+                            </button>
+                        </form>
+                    {% else %}
+                        <!-- UI elements shown only to Anonymous Guests -->
+                        <a href="{% url 'login' %}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
+                            Log In
+                        </a>
+                        <a href="{% url 'signup' %}" class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-500 transition-colors">
+                            Sign Up
+                        </a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block body_content %}
+        <!-- Child templates inject their layout structure here -->
+        {% endblock body_content %}
+    </main>
+
+</body>
+</html>

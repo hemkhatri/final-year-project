@@ -14,9 +14,28 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# django_project/urls.py
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.shortcuts import redirect
+from accounts.views import SellerDashboardView, SignUpView  # <-- Make sure SignUpView is imported!
+
+# Your dynamic landing router
+def root_redirect_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.role == "SELLER":
+        return redirect('seller_dashboard')
+    return redirect('login') 
 
 urlpatterns = [
+    path('', root_redirect_view, name='root_redirect'),
     path('admin/', admin.site.urls),
+    path('dashboard/seller/', SellerDashboardView.as_view(), name='seller_dashboard'),
+    
+    # 1. Explicitly add the signup route here:
+    path('accounts/signup/', SignUpView.as_view(), name='signup'),
+    
+    # 2. Then include the built-in authentication views:
+    path('accounts/', include('django.contrib.auth.urls')), 
 ]
