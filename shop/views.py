@@ -1,5 +1,5 @@
-# shop/views.py
-from django.views.generic import CreateView, ListView, DetailView  # Added DetailView here
+import os  # Ensure you import os at the top of the file
+from django.views.generic import CreateView, ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils.text import slugify
@@ -11,6 +11,13 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     form_class = InteractiveProductForm
     template_name = 'shop/product_form.html'
     success_url = reverse_lazy('seller_dashboard')
+
+    # 👇 Override get_context_data to inject the .env variable into the page template
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Fetch key from environment. Defaults to empty string if missing.
+        context['IMGBB_API_KEY'] = os.getenv('IMGBB_API_KEY', '')
+        return context
 
     def form_valid(self, form):
         form.instance.seller = self.request.user
@@ -34,8 +41,32 @@ class ProductListView(ListView):
     template_name = 'shop/market.html'
     context_object_name = 'products'
 
-# Add this class so shop/urls.py stops crashing!
 class ProductDetailView(DetailView):
     model = Product
-    template_name = 'shop/product_detail.html' # Matches your template file tree
+    template_name = 'shop/product_detail.html'
     context_object_name = 'product'
+
+
+# shop/views.py
+import requests
+from django.http import JsonResponse
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class ImgBBProxyUploadView(LoginRequiredMixin, View):
+    def post(self, request):
+        file = request.FILES.get('image')
+        if not file:
+            return JsonResponse({'success': False, 'error': 'No file provided'}, status=400)
+        if file.size > 1 * 1024 * 1024:
+            return JsonResponse({'success': False, 'error': 'File exceeds 1MB'}, status=400)
+
+        resp = requests.post(
+            'https://api.imgbb.com/1/upload',
+            params={'key': os.getenv('IMGBB_API_KEY', '')},
+            files={'image': file.read()},
+        )
+        data = resp.json()
+        if data.get('success'):
+            return JsonResponse({'success': True, 'url': data['data']['url']})
+        return JsonResponse({'success': False, 'error': 'ImgBB upload failed'}, status=502)
