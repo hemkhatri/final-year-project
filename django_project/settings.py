@@ -32,7 +32,11 @@ SECRET_KEY = 'django-insecure-sg+&pty1adj4h9gr(#j!yq&jkxm#4a0z7-@l&7f*r1n+k^u+3m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    ".ngrok-free.dev",
+]
 
 
 # Application definition
@@ -46,6 +50,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'shop',
+    'cart',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +76,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'cart.context_processors.cart',
             ],
         },
     },
@@ -135,3 +142,5 @@ LOGIN_REDIRECT_URL = '/'
 
 # Where to send users after they log out (optional but highly recommended)
 LOGOUT_REDIRECT_URL = 'login'
+
+CART_SESSION_ID = "cart"

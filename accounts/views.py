@@ -37,7 +37,7 @@ class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['active_listings'] = seller_products.count()
         
         # 3. Dynamic layout string formatting (Placeholder for real checkout/order aggregation formulas later)
-        context['total_sales'] = "$0.00"
+        context['total_sales'] = "Rs. 0.00"
 
         # 4. Category options for the "Add New Product" form dropdown
         context['categories'] = Category.objects.all()

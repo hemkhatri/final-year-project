@@ -40,6 +40,8 @@ urlpatterns = [
     path('dashboard/seller/', SellerDashboardView.as_view(), name='seller_dashboard'),
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
     path('accounts/', include('django.contrib.auth.urls')), 
-    path('shop/', include('shop.urls')), # Kept for explicit sub-routing if needed
+    path('shop/', include('shop.urls')), 
     path("assistant/", include("assistant.urls")),
+    path('cart/', include('cart.urls')),
+    path('payment/', include('payment.urls')), 
 ]
