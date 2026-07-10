@@ -14,6 +14,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import Order, OrderItem, Product
 from payment.models import OrderItem as PaymentOrderItem
+from django.shortcuts import render
+
 
 # shop/views.py
 @method_decorator(csrf_protect, name='dispatch')
@@ -273,3 +275,8 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
         response['Pragma'] = 'no-cache'
         response['Expires'] = '0'
         return response
+    
+
+def category_list_view(request):
+    categories = Category.objects.all()
+    return render(request, 'shop/category.html', {'categories': categories})

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Product Categories{% endblock %}
+
+{% block main_wrapper %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Browse Categories</h1>
+        <p class="text-sm text-gray-500 mt-1">Explore all items categorized across our global marketplace ecosystem.</p>
+    </div>
+    
+    <!-- Dynamic Category Grid Grid layout -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        
+        {% for category in categories %}
+            <!-- Clicking a category cards routes them to your specific category catalog view if you have one -->
+            <div class="border border-gray-200 rounded-xl p-6 bg-white shadow-xs hover:shadow-md transition text-center cursor-pointer">
+                
+                <!-- Display an icon field if it exists on your model, otherwise default to a generic folder/box emoji -->
+                <span class="text-3xl block mb-2">{{ category.icon|default:"📁" }}</span>
+                
+                <!-- Display the dynamic category name -->
+                <span class="font-bold text-gray-800 text-sm">{{ category.name }}</span>
+                
+            </div>
+        {% empty %}
+            <!-- Safe fallback if zero categories are configured inside your database admin panel -->
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-400 text-sm">No marketplace categories have been created yet.</p>
+            </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

@@ -30,7 +30,7 @@
                         <div class="hidden md:flex items-center space-x-1">
                             <a href="#"
                                class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Explore</a>
-                            <a href="#"
+                            <a href="{% url 'category_list' %}"
                                class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
                             {% if user.is_authenticated and user.role == 'seller' %}
                                 <a href="{% url 'seller_dashboard' %}"
