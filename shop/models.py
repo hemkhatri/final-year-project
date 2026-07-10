@@ -11,13 +11,31 @@ def extract_youtube_id(url):
     return match.group(1) if match else (url if re.fullmatch(r'[\w-]{11}', url or '') else '')
 
 
+# shop/models.py
+from django.db import models
+
 class Category(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     
+    # Self-referential relationship for subcategories
+    parent = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='subcategories'
+    )
+    
+    class Meta:
+        verbose_name_plural = "categories"
+
     def __str__(self):
+        if self.parent:
+            return f"{self.parent.name} → {self.name}"
         return self.name
 
+        
 class Product(models.Model):
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='products')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')

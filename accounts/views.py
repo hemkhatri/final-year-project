@@ -1,5 +1,5 @@
 # accounts/views.py
-import os
+import os, json
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.urls import reverse_lazy
@@ -40,9 +40,14 @@ class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['total_sales'] = "Rs. 0.00"
 
         # 4. Category options for the "Add New Product" form dropdown
-        context['categories'] = Category.objects.all()
+        context['categories'] = Category.objects.select_related('parent').order_by('name')
+        # accounts/views.py
+        context['category_tree_json'] = [
+            {'id': c.pk, 'name': c.name, 'parent_id': c.parent_id}
+            for c in context['categories']
+        ]
 
-        # 5. ImgBB key for direct client-side image uploads
+                # 5. ImgBB key for direct client-side image uploads
         context['IMGBB_API_KEY'] = os.getenv('IMGBB_API_KEY', '')
         
         return context

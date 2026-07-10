@@ -277,6 +277,13 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
         return response
     
 
+# shop/views.py
+from django.shortcuts import render
+from .models import Category
+
 def category_list_view(request):
-    categories = Category.objects.all()
+    # Fetch ONLY top-level categories (categories without a parent)
+    # select_related avoids hitting the DB repeatedly when loading subcategories
+    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories')
+    
     return render(request, 'shop/category.html', {'categories': categories})
