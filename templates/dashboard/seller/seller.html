@@ -3,7 +3,26 @@
 {% block title %}Seller Central Workspace{% endblock %}
 
 {% block main_wrapper %}
-<div class="flex h-screen overflow-hidden" x-data="{ currentTab: 'dashboard' }">
+<!-- Master Unified Alpine Controller Object -->
+<div class="flex h-screen overflow-hidden" 
+     x-data="{ 
+        currentTab: 'dashboard',
+        orderFilter: 'new',
+        allOrders: { new: [], processing: [], shipped: [], returns: [] },
+        
+        fetchOrders() {
+            const cacheBuster = '?t=' + new Date().getTime();
+            fetch('/shop/api/seller/orders/' + cacheBuster)
+                .then(res => res.json())
+                .then(data => { 
+                    if(data.success) {
+                        this.allOrders = data.orders;
+                    }
+                })
+                .catch(err => console.error('Failed fetching orders:', err));
+        }
+     }"
+     x-init="fetchOrders()">
     
     <!-- SIDEBAR NAVIGATION -->
     <div class="w-64 bg-indigo-900 text-white flex flex-col justify-between hidden md:flex">
@@ -34,14 +53,9 @@
 
     <!-- MAIN APP CANVAS WORKSPACE -->
     <div class="flex-1 flex flex-col overflow-y-auto">
-        
-        <!-- COMPONENT CHIPS INJECTED HERE -->
-        <!-- Each individual template handles its own header title block dynamically -->
-        <!-- COMPONENT CHIPS INJECTED HERE -->
         {% include 'dashboard/seller/_seller_dashboard.html' %}
         {% include 'dashboard/seller/_seller_products.html' %}
         {% include 'dashboard/seller/_seller_orders.html' %}
-
     </div>
 </div>
 {% endblock %}

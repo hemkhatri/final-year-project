@@ -21,10 +21,20 @@ class Order(models.Model):
         return f"Order #{self.id} - {self.user.username}"
 
 class OrderItem(models.Model):
+    FULFILLMENT_CHOICES = (
+        ('NEW', 'New'),
+        ('PROCESSING', 'Processing'),
+        ('SHIPPED', 'Shipped'),
+        ('RETURNS', 'Returns & Dispute'),
+    )
+    
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField(default=1)
+    
+    # Add this field to track individual seller item fulfillment pipelines
+    fulfillment_status = models.CharField(max_length=20, choices=FULFILLMENT_CHOICES, default='NEW')
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name}"

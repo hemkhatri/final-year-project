@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     ProductListView, ProductDetailView, ProductCreateView, 
-    ProductUpdateAjaxView, ProductDeleteView, ProductCreateAjaxView
+    ProductUpdateAjaxView, ProductDeleteView, ProductCreateAjaxView, SellerOrdersJsonView
 )
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('dashboard/seller/products/create-ajax/', ProductCreateAjaxView.as_view(), name='product_create_ajax'), # NEW endpoint
     path('dashboard/seller/products/<int:pk>/update/', ProductUpdateAjaxView.as_view(), name='product_update_ajax'),
     path('dashboard/seller/products/<int:pk>/delete/', ProductDeleteView.as_view(), name='product_delete'),
+    path('api/seller/orders/', SellerOrdersJsonView.as_view(), name='seller_orders_api'),
 ]

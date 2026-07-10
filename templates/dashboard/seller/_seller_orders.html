@@ -1,50 +1,66 @@
 <!-- ================= 3. ORDERS (THE FULFILLMENT HUB) ================= -->
-<div x-show="currentTab === 'orders'" class="bg-white rounded-xl shadow-xs border border-gray-200 p-6" x-transition>
+<!-- ================= 3. ORDERS (THE FULFILLMENT HUB) ================= -->
+<div x-show="currentTab === 'orders'" 
+     class="bg-white rounded-xl shadow-xs border border-gray-200 p-6" x-transition>
     <div class="mb-6">
         <h3 class="text-lg font-bold text-gray-900">Order Management</h3>
         <p class="text-xs text-gray-400">Process shipping pipelines, generate tracking manifests, and view communication paths.</p>
     </div>
 
     <!-- Order Pipeline States Matrix -->
-    <div class="flex flex-wrap border-b border-gray-200 mb-6 gap-2" x-data="{ orderFilter: 'new' }">
-        <button @click="orderFilter = 'new'" class="border-b-2 border-indigo-600 text-indigo-600 font-semibold py-2 px-3 text-sm">New Orders <span class="ml-1 bg-indigo-100 text-indigo-700 text-2xs px-1.5 py-0.5 rounded-full">4</span></button>
-        <button @click="orderFilter = 'processing'" class="border-transparent text-gray-500 hover:text-gray-700 py-2 px-3 text-sm">Processing</button>
-        <button @click="orderFilter = 'shipped'" class="border-transparent text-gray-500 hover:text-gray-700 py-2 px-3 text-sm">Shipped</button>
-        <button @click="orderFilter = 'returns'" class="border-transparent text-gray-500 hover:text-gray-700 py-2 px-3 text-sm">Returns & Dispute</button>
+    <div class="flex flex-wrap border-b border-gray-200 mb-6 gap-2">
+        <button @click="orderFilter = 'new'" :class="orderFilter === 'new' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'" class="py-2 px-3 text-sm">
+            New Orders <span class="ml-1 bg-indigo-100 text-indigo-700 text-2xs px-1.5 py-0.5 rounded-full" x-text="allOrders.new.length">0</span>
+        </button>
+        <button @click="orderFilter = 'processing'" :class="orderFilter === 'processing' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'" class="py-2 px-3 text-sm">
+            Processing <span class="ml-1 bg-gray-100 text-gray-700 text-2xs px-1.5 py-0.5 rounded-full" x-text="allOrders.processing.length">0</span>
+        </button>
+        <button @click="orderFilter = 'shipped'" :class="orderFilter === 'shipped' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'" class="py-2 px-3 text-sm">
+            Shipped
+        </button>
+        <button @click="orderFilter = 'returns'" :class="orderFilter === 'returns' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'" class="py-2 px-3 text-sm">
+            Returns & Dispute
+        </button>
     </div>
 
     <!-- Orders Grid Flow Stack -->
     <div class="space-y-4">
-        <!-- Sample Order Workspace 1 -->
-        <div class="border border-gray-200 rounded-xl p-5 bg-white space-y-4 shadow-2xs hover:border-gray-300 transition">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start border-b border-gray-100 pb-3 gap-2">
-                <div>
-                    <span class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Order #10248</span>
-                    <span class="text-xs text-gray-400 ml-2">Placed on: July 9, 2026</span>
+        <!-- Loop over current state category array dynamically -->
+        <template x-for="order in allOrders[orderFilter]" :key="order.id">
+            <div class="border border-gray-200 rounded-xl p-5 bg-white space-y-4 shadow-2xs hover:border-gray-300 transition">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start border-b border-gray-100 pb-3 gap-2">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded" x-text="order.order_num"></span>
+                        <span class="text-xs text-gray-400 ml-2">Placed on: <span x-text="order.date"></span></span>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-800">Total Settlement: $<span x-text="order.total"></span></div>
                 </div>
-                <div class="text-sm font-semibold text-gray-800">Total Settlement: $114.50</div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div>
-                    <p class="text-gray-400 font-medium uppercase tracking-wider mb-1">Purchased Products</p>
-                    <p class="font-bold text-gray-800">1x Ergonomic Leather Office Chair</p>
-                    <p class="text-gray-400 mt-0.5">Variant: Midnight Black / Steel</p>
-                </div>
-                <div>
-                    <p class="text-gray-400 font-medium uppercase tracking-wider mb-1">Shipping Destination</p>
-                    <p class="font-medium text-gray-800">Jane Doe</p>
-                    <p class="text-gray-500">123 Marketplace Way, Suite 4B, New York, NY 10001</p>
-                </div>
-                <div class="flex flex-row md:flex-col justify-end items-center md:items-end gap-2 pt-2 md:pt-0">
-                    <button class="w-full md:w-36 text-center text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-sm shadow-xs transition">
-                        🖨️ Print Packing Slip
-                    </button>
-                    <button class="w-full md:w-36 text-center text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-sm transition">
-                        💬 Contact Buyer
-                    </button>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <p class="text-gray-400 font-medium uppercase tracking-wider mb-1">Purchased Products</p>
+                        <p class="font-bold text-gray-800"><span x-text="order.quantity"></span>x <span x-text="order.product_name"></span></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 font-medium uppercase tracking-wider mb-1">Shipping Destination</p>
+                        <p class="font-medium text-gray-800" x-text="order.buyer_name"></p>
+                        <p class="text-gray-500" x-text="order.address"></p>
+                    </div>
+                    <div class="flex flex-row md:flex-col justify-end items-center md:items-end gap-2 pt-2 md:pt-0">
+                        <button class="w-full md:w-36 text-center text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-sm shadow-xs transition">
+                            🖨️ Print Packing Slip
+                        </button>
+                        <button class="w-full md:w-36 text-center text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-sm transition">
+                            💬 Contact Buyer
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
+
+        <!-- Empty State Handling -->
+        <template x-if="allOrders[orderFilter].length === 0">
+            <p class="text-center py-8 text-sm text-gray-400">No orders found inside this pipeline tier.</p>
+        </template>
     </div>
 </div>
