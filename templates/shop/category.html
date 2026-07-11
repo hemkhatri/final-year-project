@@ -9,30 +9,31 @@
         <p class="text-sm text-gray-500 mt-1">Explore all items categorized across our global marketplace ecosystem.</p>
     </div>
     
-    <!-- Category & Subcategory Grid Layout -->
+    <!-- Reverted to your 3-column Grid Layout -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {% for category in categories %}
-            <div class="border border-gray-200 rounded-xl p-6 bg-white shadow-xs hover:shadow-md transition flex flex-col justify-between">
-                <div>
-                    <!-- Top-Level Category Header -->
-                    <div class="flex items-center gap-2 border-b border-gray-100 pb-3 mb-4">
-                        <span class="text-2xl">📁</span>
-                        <h2 class="font-bold text-gray-900 text-lg">{{ category.name }}</h2>
-                    </div>
-                    
-                    <!-- Subcategories List -->
-                    <div class="space-y-2">
-                        {% for sub in category.subcategories.all %}
-                            <a href="#" class="block text-sm text-gray-600 hover:text-indigo-600 hover:underline transition">
-                                ↳ {{ sub.name }}
-                            </a>
-                        {% empty %}
-                            <p class="text-xs text-gray-400 italic">No subcategories available.</p>
-                        {% endfor %}
-                    </div>
+            <!-- Sleek Horizontal Banner: Compressed height to h-28 (112px) -->
+            <a href="#" class="relative overflow-hidden rounded-xl px-5 py-4 bg-indigo-600 text-white shadow-xs hover:shadow-lg hover:scale-[1.02] transition-all duration-300 flex items-center justify-between h-20 w-full">
+                
+                <!-- Left Content: Snug vertical layout for banner styling -->
+                <div class="flex flex-col justify-between h-full z-10">
+                    <h2 class="font-bold text-l tracking-tight leading-tight max-w-[180px]">{{ category.name }}</h2>
                 </div>
-            </div>
+                
+                <!-- Right Content: Absolute alignment sticking strictly inside the thin banner height -->
+                <div class="absolute right-2 bottom-0 top-0 w-1/2 flex items-end justify-end pointer-events-none">
+                    {% if category.image_url %}
+                        <img src="{{ category.image_url }}" 
+                             alt="{{ category.name }}" 
+                             loading="lazy"
+                             decoding="async"
+                             class="h-[95%] w-auto object-contain object-bottom drop-shadow-xl transition duration-300 transform hover:scale-105">
+                    {% else %}
+                        <span class="text-3xl opacity-30 mr-3 mb-3">📁</span>
+                    {% endif %}
+                </div>
+            </a>
         {% empty %}
             <div class="col-span-full text-center py-12">
                 <p class="text-gray-400 text-sm">No marketplace categories have been created yet.</p>

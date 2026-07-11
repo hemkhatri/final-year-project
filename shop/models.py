@@ -26,6 +26,7 @@ class Category(models.Model):
         blank=True, 
         related_name='subcategories'
     )
+    image_url = models.URLField(max_length=500, blank=True, null=True)
     
     class Meta:
         verbose_name_plural = "categories"
@@ -35,7 +36,7 @@ class Category(models.Model):
             return f"{self.parent.name} → {self.name}"
         return self.name
 
-        
+
 class Product(models.Model):
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='products')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
