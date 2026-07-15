@@ -10,10 +10,6 @@ def extract_youtube_id(url):
     match = re.search(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/))([\w-]{11})', url or '')
     return match.group(1) if match else (url if re.fullmatch(r'[\w-]{11}', url or '') else '')
 
-
-# shop/models.py
-from django.db import models
-
 class Category(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)

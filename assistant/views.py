@@ -9,7 +9,6 @@ from .utils import get_available_products
 
 logger = logging.getLogger(__name__)
 
-
 def build_system_prompt():
     products = get_available_products()
 
@@ -38,7 +37,6 @@ Rules:
 - Do not include markdown, code fences, or any text outside the JSON object.
 """
 
-
 @require_POST
 def chat_view(request):
     try:
@@ -46,9 +44,17 @@ def chat_view(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    user_message = data.get("message", "").strip()
-    if not user_message:
-        return JsonResponse({"error": "Message is required"}, status=400)
+    # 1. Accept an array of messages instead of a single string
+    conversation_history = data.get("messages", [])
+    if not conversation_history or not isinstance(conversation_history, list):
+        return JsonResponse({"error": "A 'messages' array is required"}, status=400)
+
+    # 2. Start with the system prompt, then append the user's history
+    groq_messages = [{"role": "system", "content": build_system_prompt()}]
+    
+    for msg in conversation_history:
+        if "role" in msg and "content" in msg:
+            groq_messages.append({"role": msg["role"], "content": msg["content"]})
 
     try:
         response = requests.post(
@@ -59,10 +65,7 @@ def chat_view(request):
             },
             json={
                 "model": "llama-3.3-70b-versatile",
-                "messages": [
-                    {"role": "system", "content": build_system_prompt()},
-                    {"role": "user", "content": user_message},
-                ],
+                "messages": groq_messages,
                 "max_tokens": 800,
                 "response_format": {"type": "json_object"},
             },
