@@ -7,7 +7,7 @@ Built using a robust architecture with **Python** and the **Django Framework**, 
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Features 
 
 ### 1. User Authentication & Profile Management
 *   **Secure Authentication:** Custom user models supporting secure registration, login, and password recovery via encrypted tokens.
