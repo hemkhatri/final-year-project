@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Logistics & Delivery Workspace{% endblock %}
+
+{% block main_wrapper %}
+<!-- Master Unified Alpine Controller Object for Delivery Fleet -->
+<div class="flex h-screen overflow-hidden bg-gray-50" 
+     x-data="{ 
+        currentTab: 'queue',
+        activeDeliveryId: null,
+        
+        // Mock State representing the data required right now
+        earnings: { daily: 45.00, cod_balance: 120.50, completed_today: 3, pending: 2 },
+        activeQueue: [
+            { id: 'ORD-9942', customer: 'John Doe', address: '123 Alpine Ridge Way, Sector 4', priority: 'Express', type: 'COD', amount: '$45.00', status: 'En Route', eta: '12 mins', distance: '3.4 km', phone: '+15550199' },
+            { id: 'ORD-8821', customer: 'Jane Smith', address: '782 Tailwind Blvd, Apt 4B', priority: 'Standard', type: 'Prepaid', amount: '$0.00', status: 'Assigned', eta: '45 mins', distance: '8.1 km', phone: '+15550233' }
+        ]
+     }">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="w-64 bg-indigo-900 text-white flex flex-col justify-between hidden md:flex">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold tracking-wider mb-8">Delivery Central</h1>
+            <nav class="space-y-2">
+                <button @click="currentTab = 'queue'" 
+                        :class="currentTab === 'queue' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    🚚 Active Queue
+                </button>
+                <button @click="currentTab = 'performance'" 
+                        :class="currentTab === 'performance' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    📈 Earnings & Stats
+                </button>
+                <button @click="currentTab = 'support'" 
+                        :class="currentTab === 'support' ? 'bg-indigo-800 text-white font-semibold' : 'text-indigo-200 hover:bg-indigo-800'" 
+                        class="w-full text-left flex items-center gap-3 py-2.5 px-4 rounded transition cursor-pointer">
+                    💬 Dispatch Support
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Bottom Identity Block with POST Logout -->
+        <div class="p-4 border-t border-indigo-800 text-sm text-indigo-300 space-y-3">
+            <div>
+                <span class="block text-xs opacity-75">Driver Profile</span>
+                <span class="block font-medium text-white text-base truncate">{{ request.user.get_full_name|default:request.user.username }}</span>
+                <span class="text-xs text-green-400 bg-green-950/50 px-2 py-0.5 rounded-full inline-block mt-1">
+                    {{ profile.get_vehicle_type_display|default:"Standard Vehicle" }}
+                </span>
+            </div>
+            <form action="{% url 'logout' %}" method="post" class="w-full">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-center bg-indigo-950 hover:bg-red-900/40 text-red-200 text-xs py-2 rounded transition font-medium cursor-pointer">
+                    Secure Sign Out
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP CANVAS WORKSPACE -->
+    <div class="flex-1 flex flex-col overflow-y-auto">
+        {% include 'dashboard/delivery/_delivery_queue.html' %}
+        {% include 'dashboard/delivery/_delivery_performance.html' %}
+        {% include 'dashboard/delivery/_delivery_support.html' %}
+    </div>
+</div>
+{% endblock %}

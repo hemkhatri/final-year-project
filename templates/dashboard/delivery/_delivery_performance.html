@@ -1,0 +1,25 @@
+<!-- templates/dashboard/delivery/_delivery_performance.html -->
+<div x-show="currentTab === 'performance'" class="p-6 space-y-6">
+    <div class="border-b border-gray-200 pb-4">
+        <h2 class="text-2xl font-bold text-gray-800">Earnings & Metric Optimization</h2>
+    </div>
+
+    <!-- Financial Performance Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gradient-to-br from-indigo-900 to-indigo-800 text-white p-6 rounded-xl shadow-sm">
+            <h6 class="text-xs uppercase opacity-75 font-semibold tracking-wider">Accumulated Session Earnings</h6>
+            <h2 class="text-3xl font-black mt-2" x-text="'$' + earnings.daily.toFixed(2)"></h2>
+            <p class="text-[11px] text-indigo-200 mt-2">Base rates combined with generated tip allocations</p>
+        </div>
+        <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h6 class="text-xs text-gray-500 uppercase font-semibold tracking-wider">COD Cash Balance On-Hand</h6>
+            <h2 class="text-3xl font-black text-gray-900 mt-2" x-text="'$' + earnings.cod_balance.toFixed(2)"></h2>
+            <p class="text-[11px] text-amber-600 font-medium mt-2">⚠️ Awaiting deposit processing to dispatcher warehouse</p>
+        </div>
+        <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+            <h6 class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Shift Fulfillment Ratio</h6>
+            <h2 class="text-3xl font-black text-green-600 mt-2" x-text="earnings.completed_today + ' / ' + (earnings.completed_today + earnings.pending)"></h2>
+            <p class="text-[11px] text-gray-400 mt-2">Total tasks closed without exceptions</p>
+        </div>
+    </div>
+</div>

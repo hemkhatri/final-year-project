@@ -15,17 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 # django_project/urls.py
-# django_project/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
-from accounts.views import SellerDashboardView, SignUpView
-from shop.views import ProductListView # Make sure this is available
+from shop.views import ProductListView 
 
 def root_redirect_view(request):
     # If not logged in, let them browse the marketplace anonymously!
     if not request.user.is_authenticated:
         return ProductListView.as_view()(request)
+        
+    # 1. Added: Redirect delivery boys immediately to their dashboard
+    if request.user.role == "DELIVERY_BOY":
+        return redirect('delivery_dashboard')
         
     # If they are a Seller, divert them to their management dashboard
     if request.user.role == "SELLER":
@@ -37,9 +39,13 @@ def root_redirect_view(request):
 urlpatterns = [
     path('', root_redirect_view, name='root_redirect'),
     path('admin/', admin.site.urls),
-    path('dashboard/seller/', SellerDashboardView.as_view(), name='seller_dashboard'),
-    path('accounts/signup/', SignUpView.as_view(), name='signup'),
+    
+    # 2. Properly include ALL paths from your accounts app (signup, delivery, redirect, etc.)
+    path('accounts/', include('accounts.urls')), 
+    
+    # 3. Built-in auth views (login, logout) go below it
     path('accounts/', include('django.contrib.auth.urls')), 
+    
     path('shop/', include('shop.urls')), 
     path("assistant/", include("assistant.urls")),
     path('cart/', include('cart.urls')),
