@@ -6,7 +6,7 @@ from .views import (
 
 urlpatterns = [
     path('', ProductListView.as_view(), name='market_home'),
-    path('product/<int:pk>/', ProductDetailView.as_view(), name='product_detail'),
+    path('<slug:slug>/', ProductDetailView.as_view(), name='product_detail'),
     path('products/create/', ProductCreateView.as_view(), name='product_create'), # Your standard page
     path('dashboard/seller/products/create-ajax/', ProductCreateAjaxView.as_view(), name='product_create_ajax'), # NEW endpoint
     path('dashboard/seller/products/<int:pk>/update/', ProductUpdateAjaxView.as_view(), name='product_update_ajax'),

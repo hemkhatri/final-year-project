@@ -1,0 +1,20 @@
+/* The container holding the products array */
+.product-carousel {
+  display: flex;
+  overflow-x: auto;         /* Enables horizontal scrolling */
+  scroll-snap-type: x mandatory; /* Optional: Makes it snap to cards smoothly */
+  gap: 16px;                /* Space between shoes */
+  padding-bottom: 10px;
+}
+
+/* Individual product card */
+.product-card {
+  flex: 0 0 auto;           /* Prevents the card from shrinking */
+  width: 250px;             /* Set a fixed width for your cards */
+  scroll-snap-align: start; /* Optional: snapping point */
+}
+
+/* Hide the ugly scrollbar (optional but cleaner) */
+.product-carousel::-webkit-scrollbar {
+  display: none;
+}

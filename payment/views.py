@@ -64,13 +64,8 @@ def checkout_preview(request):
 
 
 def payment_success(request):
-    """
-    eSewa redirects here on a successful transaction.
-    """
-    # For eSewa v2, success details are sent as a Base64 string encoded in a GET parameter named 'data'
+
     encoded_data = request.GET.get('data')
-    
-    # Clean up the user's active shopping session cart since payment went through!
     cart = Cart(request)
     cart.clear()
     

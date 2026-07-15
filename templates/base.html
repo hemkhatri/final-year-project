@@ -1,3 +1,4 @@
+{% load static %}
 <!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +12,7 @@
         <!-- AlpineJS for Interactive Nav Menus -->
         <script defer
                 src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+                 <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     </head>
     <body class="bg-gray-50 font-sans tracking-wide min-h-screen flex flex-col antialiased text-gray-900"
           x-data="{ mobileMenuOpen: false }">
@@ -359,71 +361,87 @@
                 </svg>
             </button>
         </div>
-        <script>
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        }
+       <script>
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
 
-        function assistantWidget() {
-            return {
-                open: false,
-                input: '',
-                loading: false,
-                messages: [
-                    { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?', products: [] }
-                ],
+function assistantWidget() {
+    return {
+        open: false,
+        input: '',
+        loading: false,
+        messages: [
+            { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?', products: [] }
+        ],
 
-                async sendMessage() {
-                    const text = this.input.trim();
-                    if (!text || this.loading) return;
+        async sendMessage() {
+            const text = this.input.trim();
+            if (!text || this.loading) return;
 
-                    this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
-                    this.input = '';
-                    this.loading = true;
-                    this.scrollToBottom();
+            // 1. Add user message to the UI array
+            this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
+            this.input = '';
+            this.loading = true;
+            this.scrollToBottom();
 
-                    try {
-                        const res = await fetch("{% url 'assistant_chat' %}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCookie('csrftoken'),
-                            },
-                            body: JSON.stringify({ message: text }),
-                        });
+            // 2. FORMAT THE HISTORY FOR THE BACKEND
+            // We map through your messages and format them so the AI understands who said what
+            const historyForBackend = this.messages.map(msg => {
+                if (msg.role === 'user') {
+                    return { role: 'user', content: msg.text };
+                } else {
+                    // Reconstruct the AI's JSON so it remembers exactly how it replied
+                    return { 
+                        role: 'assistant', 
+                        content: JSON.stringify({ message: msg.text, products: msg.products }) 
+                    };
+                }
+            });
 
-                        const data = await res.json();
+            try {
+                const res = await fetch("{% url 'assistant_chat' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    // 3. SEND THE FULL HISTORY INSTEAD OF ONE MESSAGE
+                    body: JSON.stringify({ messages: historyForBackend }), 
+                });
 
-                        if (!res.ok) {
-                            this.messages.push({ id: Date.now() + 1, role: 'assistant', text: data.error || "Something went wrong.", products: [] });
-                        } else {
-                            this.messages.push({
-                                id: Date.now() + 1,
-                                role: 'assistant',
-                                text: data.message,
-                                products: data.products || []
-                            });
-                        }
-                    } catch (err) {
-                        this.messages.push({ id: Date.now() + 1, role: 'assistant', text: "Couldn't reach the assistant.", products: [] });
-                    } finally {
-                        this.loading = false;
-                        this.scrollToBottom();
-                    }
-                },  // <-- THIS COMMA is the critical part — easy to miss
+                const data = await res.json();
 
-                scrollToBottom() {
-                    this.$nextTick(() => {
-                        const box = this.$refs.messageBox;
-                        if (box) box.scrollTop = box.scrollHeight;
+                if (!res.ok) {
+                    this.messages.push({ id: Date.now() + 1, role: 'assistant', text: data.error || "Something went wrong.", products: [] });
+                } else {
+                    this.messages.push({
+                        id: Date.now() + 1,
+                        role: 'assistant',
+                        text: data.message,
+                        products: data.products || []
                     });
                 }
+            } catch (err) {
+                this.messages.push({ id: Date.now() + 1, role: 'assistant', text: "Couldn't reach the assistant.", products: [] });
+            } finally {
+                this.loading = false;
+                this.scrollToBottom();
             }
+        },
+
+        scrollToBottom() {
+            this.$nextTick(() => {
+                const box = this.$refs.messageBox;
+                if (box) box.scrollTop = box.scrollHeight;
+            });
         }
-        </script>
+    }
+}
+</script>
     </body>
 </html>
 </body>
