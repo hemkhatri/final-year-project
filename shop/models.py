@@ -13,8 +13,6 @@ def extract_youtube_id(url):
 class Category(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
-    
-    # Self-referential relationship for subcategories
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
@@ -49,7 +47,6 @@ class Product(models.Model):
         first_image = self.media.filter(media_type='IMAGE').first()
         return first_image.url if first_image else None
 
-    
     def __str__(self):
         return self.name
 
@@ -60,7 +57,7 @@ class ProductMedia(models.Model):
     )
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='media')
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPES, default='IMAGE')
-    url = models.URLField(max_length=500) # Stores ImgBB CDN url OR Youtube url
+    url = models.URLField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -72,8 +69,9 @@ class ProductMedia(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('NEW', 'New'),
-        ('PROCESSING', 'Processing'),
+        ('PENDING', 'Payment Pending'),
+        ('PAID', 'Payment Successful'),
+        ('ASSIGNING', 'Assigning Driver'),
         ('SHIPPED', 'Shipped'),
         ('RETURNS', 'Returns & Dispute'),
     ]
@@ -82,12 +80,23 @@ class Order(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     shipping_name = models.CharField(max_length=255)
     shipping_address = models.TextField()
+    phone_number = models.CharField(max_length=20, blank=True)
+    
+    # ===== CRITICAL: Delivery Location Coordinates =====
+    delivery_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    delivery_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    transaction_uuid = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    
+    def __str__(self):
+        return f"Order #{self.id} - {self.buyer.username}"
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')
-    product_name_snapshot = models.CharField(max_length=200, blank=True)  # preserved even if product is deleted later
+    product_name_snapshot = models.CharField(max_length=200, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=Order.STATUS_CHOICES, default='NEW')
+    status = models.CharField(max_length=20, choices=Order.STATUS_CHOICES, default='PENDING')

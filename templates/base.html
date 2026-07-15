@@ -13,6 +13,13 @@
     <!-- AlpineJS for Interactive Nav Menus -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 
 <body class="bg-gray-50 font-sans tracking-wide min-h-screen flex flex-col antialiased text-gray-900"
@@ -113,11 +120,10 @@
                             </a>
                             <div class="border-t border-gray-100 my-1"></div>
                             <!-- Logout Button Option -->
-                            <form action="{% url 'logout' %}" method="post" class="block w-full">
+                            <form action="{% url 'accounts:logout' %}" method="post">
                                 {% csrf_token %}
-                                <button type="submit"
-                                    class="w-full text-left px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer">
-                                    🚪 Log Out
+                                <button type="submit" class="w-full text-left block text-sm font-medium text-red-600">
+                                    Log Out
                                 </button>
                             </form>
                         </div>

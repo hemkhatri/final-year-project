@@ -42,6 +42,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -144,3 +145,46 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = 'login'
 
 CART_SESSION_ID = "cart"
+
+# email setup start
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER",) #your email
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "") #your app password
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# email setup end
+SITE_URL = "http://127.0.0.1:8000"
+
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Kathmandu"
+
+# ===== Windows fix: Disable multiprocessing =====
+CELERY_WORKER_POOL = 'threads'
+
+
+# django_project/settings.py
+
+# 1. Point to your true directory configuration file
+ASGI_APPLICATION = 'django_project.asgi.application'
+
+
+
+# 3. Connect Channel Layers to Memurai on Port 6379
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

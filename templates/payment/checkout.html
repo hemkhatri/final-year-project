@@ -1,54 +1,244 @@
 {% extends 'base.html' %}
-{% block title %}Complete Your Order Payment{% endblock %}
+{% block title %}Checkout & Order Payment{% endblock %}
 
 {% block body_content %}
-<div class="max-w-md mx-auto py-12">
-    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-6 text-center">
-        <h2 class="text-xl font-black text-gray-900">Confirm & Pay</h2>
-        <p class="text-sm text-gray-500">Your permanent Order Reference is: <span class="font-bold text-gray-800 block mt-0.5">{{ order.transaction_uuid }}</span></p>
+<!-- Include Leaflet CSS inside the block so it loads properly -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+<div class="max-w-md mx-auto py-12 px-4">
+    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-xs space-y-6">
+        <h2 class="text-xl font-black text-gray-900 text-center">Checkout</h2>
         
-        <div class="bg-gray-50 p-4 rounded-lg flex justify-between items-center text-sm font-bold border border-gray-100">
-            <span class="text-gray-500">Final Total Due</span>
-            <span class="text-lg font-black text-indigo-600">Rs. {{ formatted_amount }}</span>
+        {% if error %}
+        <div class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">
+            ⚠️ {{ error }}
         </div>
+        {% endif %}
+        
+        {% if order %}
+            <!-- ================= PAYMENT MODE ================= -->
+            <div class="text-center space-y-6">
+                <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm font-semibold">
+                    ✅ Order created! Proceeding to payment...
+                </div>
 
-        <!-- CORRECTED: eSewa Sandbox Gateway Integration Form Endpoint -->
-        <form id="esewaDebugForm" action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST">
-            <input type="hidden" id="amount" name="amount" value="{{ formatted_amount }}">
-            <input type="hidden" id="tax_amount" name="tax_amount" value="0.00">
-            <input type="hidden" id="total_amount" name="total_amount" value="{{ formatted_amount }}">
-            <input type="hidden" id="transaction_uuid" name="transaction_uuid" value="{{ order.transaction_uuid }}">
-            <input type="hidden" id="product_code" name="product_code" value="{{ product_code }}">
-            <input type="hidden" id="product_service_charge" name="product_service_charge" value="0.00">
-            <input type="hidden" id="product_delivery_charge" name="product_delivery_charge" value="0.00">
-            
-            <!-- CORRECTED: Fully qualified local absolute routing targets -->
-            <input type="hidden" id="success_url" name="success_url" value="http://127.0.0.1:8000/payment/success/">
-            <input type="hidden" id="failure_url" name="failure_url" value="http://127.0.0.1:8000/payment/failure/">
-            
-            <input type="hidden" id="signed_field_names" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
-            <input type="hidden" id="signature" name="signature" value="{{ signature }}">
-            
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition cursor-pointer shadow-md text-sm">
-                Proceed to Secure eSewa Payment
-            </button>
-        </form>
+                <p class="text-sm text-gray-500">Your permanent Order Reference is: <span class="font-bold text-gray-800 block mt-0.5">{{ order.transaction_uuid }}</span></p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg flex justify-between items-center text-sm font-bold border border-gray-100">
+                    <span class="text-gray-500">Final Total Due</span>
+                    <span class="text-lg font-black text-indigo-600">Rs. {{ formatted_amount }}</span>
+                </div>
 
-        <div id="debugOutputContainer" class="hidden mt-6 p-4 rounded-lg bg-gray-900 border border-red-500 font-mono text-xs text-red-400 overflow-x-auto text-left">
-            <h3 class="font-bold text-white mb-2 text-sm">🛑 Intercepted Backend Response:</h3>
-            <pre id="debugRawText">Waiting for submission payload tracking...</pre>
-        </div>
+                <!-- eSewa Sandbox Gateway Integration Form Endpoint (v2) -->
+                <form id="esewaDebugForm" action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST" class="space-y-3">
+                    <input type="hidden" id="amount" name="amount" value="{{ formatted_amount }}">
+                    <input type="hidden" id="tax_amount" name="tax_amount" value="0.00">
+                    <input type="hidden" id="total_amount" name="total_amount" value="{{ formatted_amount }}">
+                    <input type="hidden" id="transaction_uuid" name="transaction_uuid" value="{{ order.transaction_uuid }}">
+                    <input type="hidden" id="product_code" name="product_code" value="{{ product_code }}">
+                    <input type="hidden" id="product_service_charge" name="product_service_charge" value="0.00">
+                    <input type="hidden" id="product_delivery_charge" name="product_delivery_charge" value="0.00">
+                    
+                    <!-- Fully qualified local absolute routing targets -->
+                    <input type="hidden" id="success_url" name="success_url" value="http://127.0.0.1:8000/payment/success/">
+                    <input type="hidden" id="failure_url" name="failure_url" value="http://127.0.0.1:8000/payment/failure/">
+                    
+                    <input type="hidden" id="signed_field_names" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+                    <input type="hidden" id="signature" name="signature" value="{{ signature }}">
+                    
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition cursor-pointer shadow-md text-sm">
+                        Proceed to Secure eSewa Payment
+                    </button>
+                    
+                    <a href="{% url 'cart:cart_detail' %}" class="block text-center text-xs text-gray-500 hover:text-indigo-600 mt-2 font-medium transition">
+                        ← Back to Cart
+                    </a>
+                </form>
+
+                <div id="debugOutputContainer" class="hidden mt-6 p-4 rounded-lg bg-gray-900 border border-red-500 font-mono text-xs text-red-400 overflow-x-auto text-left">
+                    <h3 class="font-bold text-white mb-2 text-sm">🛑 Intercepted Backend Response:</h3>
+                    <pre id="debugRawText">Waiting for submission payload tracking...</pre>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- ================= FORM MODE ================= -->
+            <form id="checkoutForm" method="POST" class="space-y-4">
+                {% csrf_token %}
+                
+                <div class="space-y-1">
+                    <label class="block text-xs font-black uppercase tracking-wider text-gray-500">📦 Shipping Name</label>
+                    <input type="text" name="shipping_name" required value="{{ user.get_full_name|default:user.username }}" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="block text-xs font-black uppercase tracking-wider text-gray-500">📍 Shipping Address</label>
+                    <textarea name="shipping_address" required rows="3" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="block text-xs font-black uppercase tracking-wider text-gray-500">📞 Phone Number</label>
+                    <input type="tel" name="phone_number" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-xs font-black uppercase tracking-wider text-gray-500">📍 Delivery Location on Map</label>
+                    <p class="text-[11px] text-gray-400 leading-tight">Click on the map or use the buttons below to set your precise delivery point.</p>
+                    
+                    <!-- Map Action Buttons Styled in Tailwind -->
+                    <div class="flex gap-2">
+                        <button type="button" onclick="getCurrentLocation()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg transition text-xs shadow-xs cursor-pointer">
+                            📍 Use Current Location
+                        </button>
+                        <button type="button" onclick="resetMap()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-3 rounded-lg transition text-xs cursor-pointer">
+                            🔄 Clear
+                        </button>
+                    </div>
+
+                    <!-- Map Canvas Height & Styling -->
+                    <div id="map" class="h-64 w-full rounded-lg border border-gray-200 z-10"></div>
+                    
+                    <p id="coords-display" class="text-xs text-gray-500 italic text-center p-2 bg-gray-50 rounded-lg border border-gray-100">No location selected yet</p>
+                </div>
+                
+                <input type="hidden" id="latitude" name="latitude" required>
+                <input type="hidden" id="longitude" name="longitude" required>
+                
+                <div class="pt-2 space-y-3">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition cursor-pointer shadow-md text-sm">
+                        ✅ Proceed to Payment
+                    </button>
+                    <a href="{% url 'cart:cart_detail' %}" class="block text-center text-xs text-gray-500 hover:text-indigo-600 font-medium transition">
+                        ← Back to Cart
+                    </a>
+                </div>
+            </form>
+        {% endif %}
     </div>
 </div>
 
+<!-- Include Leaflet JS at the bottom of our block -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// Optional background logging helper to make sure strings align perfectly in F12
-document.getElementById('esewaDebugForm').addEventListener('submit', function(event) {
-    const formData = new FormData(event.target);
-    console.log("--- SUBMITTING PAYLOAD VERIFICATION DATA ---");
-    formData.forEach((value, key) => {
-        console.log(`${key}: "${value}" (Len: ${value.length})`);
-    });
-});
+    let map = null;
+    let marker = null;
+    const defaultCenter = [27.7172, 85.3240]; // Centered on Kathmandu
+
+    // 1. Initializing Interactive Map Elements
+    const mapElement = document.getElementById('map');
+    if (mapElement) {
+        map = L.map('map').setView(defaultCenter, 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Map click setup handles updating targets
+        map.on('click', function(e) {
+            setLocation(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    // Helper function to update map layer, hidden inputs, and view coordinates
+    function setLocation(lat, lng) {
+        if (!map) return;
+        const latRounded = parseFloat(lat).toFixed(6);
+        const lngRounded = parseFloat(lng).toFixed(6);
+        
+        // Assign values to hidden fields
+        document.getElementById('latitude').value = latRounded;
+        document.getElementById('longitude').value = lngRounded;
+        
+        // Redraw marker at updated click position
+        if (marker) map.removeLayer(marker);
+        
+        // Custom colorful icon asset integration
+        marker = L.marker([latRounded, lngRounded], {
+            icon: L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            })
+        }).addTo(map)
+          .bindPopup(`<strong>📍 Delivery Location</strong><br><span class="font-mono text-xs">Lat: ${latRounded}<br>Lng: ${lngRounded}</span>`)
+          .openPopup();
+        
+        map.setView([latRounded, lngRounded], 16);
+        
+        // Visual prompt status updates
+        const coordsDisplay = document.getElementById('coords-display');
+        coordsDisplay.className = 'text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold text-center p-2 rounded-lg';
+        coordsDisplay.innerHTML = `✅ Location Selected:<br>Lat: ${latRounded}, Lng: ${lngRounded}`;
+    }
+
+    // Modern geolocation API utility wrapper logic
+    function getCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert('❌ Geolocation is not supported by your browser');
+            return;
+        }
+        
+        const display = document.getElementById('coords-display');
+        display.className = 'text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 font-medium text-center p-2 rounded-lg';
+        display.innerHTML = '⏳ Fetching your hardware coordinates...';
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setLocation(latitude, longitude);
+            },
+            (error) => {
+                alert('❌ Could not get your location: ' + error.message);
+                display.className = 'text-xs text-red-600 bg-red-50 border border-red-100 font-medium text-center p-2 rounded-lg';
+                display.innerHTML = '⚠️ Failed to get location. Please select a spot manually on the map.';
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    // Reset layout state to defaults
+    function resetMap() {
+        if (!map) return;
+        if (marker) map.removeLayer(marker);
+        marker = null;
+        
+        document.getElementById('latitude').value = '';
+        document.getElementById('longitude').value = '';
+        
+        const display = document.getElementById('coords-display');
+        display.className = 'text-xs text-gray-500 italic text-center p-2 bg-gray-50 rounded-lg border border-gray-100';
+        display.innerHTML = 'No location selected yet';
+        
+        map.setView(defaultCenter, 13);
+    }
+
+    // Client-side form intercept guard
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function(e) {
+            const lat = document.getElementById('latitude').value;
+            const lng = document.getElementById('longitude').value;
+            if (!lat || !lng) {
+                e.preventDefault();
+                alert('❌ Please select your exact delivery location on the map before proceeding.');
+            }
+        });
+    }
+
+    // 2. F12 Submission Payload Tracking & Logging Verification Helper
+    const esewaForm = document.getElementById('esewaDebugForm');
+    if (esewaForm) {
+        esewaForm.addEventListener('submit', function(event) {
+            const formData = new FormData(event.target);
+            console.log("--- SUBMITTING PAYLOAD VERIFICATION DATA ---");
+            formData.forEach((value, key) => {
+                console.log(`${key}: "${value}" (Len: ${value.length})`);
+            });
+        });
+    }
 </script>
 {% endblock %}

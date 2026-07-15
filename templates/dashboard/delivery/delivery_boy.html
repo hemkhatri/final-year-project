@@ -3,18 +3,22 @@
 {% block title %}Logistics & Delivery Workspace{% endblock %}
 
 {% block main_wrapper %}
+<!-- Leaflet Map Assets Injected Safely in Layout Context Header -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <!-- Master Unified Alpine Controller Object for Delivery Fleet -->
 <div class="flex h-screen overflow-hidden bg-gray-50" 
      x-data="{ 
         currentTab: 'queue',
         activeDeliveryId: null,
         
-        // Mock State representing the data required right now
-        earnings: { daily: 45.00, cod_balance: 120.50, completed_today: 3, pending: 2 },
-        activeQueue: [
-            { id: 'ORD-9942', customer: 'John Doe', address: '123 Alpine Ridge Way, Sector 4', priority: 'Express', type: 'COD', amount: '$45.00', status: 'En Route', eta: '12 mins', distance: '3.4 km', phone: '+15550199' },
-            { id: 'ORD-8821', customer: 'Jane Smith', address: '782 Tailwind Blvd, Apt 4B', priority: 'Standard', type: 'Prepaid', amount: '$0.00', status: 'Assigned', eta: '45 mins', distance: '8.1 km', phone: '+15550233' }
-        ]
+        // Track telemetry metrics calculated directly from Django context variables
+        earnings: { 
+            daily: 'Rs. 0.00', 
+            completed_today: {{ completed_deliveries|default:0 }}, 
+            pending: {{ pending_deliveries|default:0 }} 
+        }
      }">
     
     <!-- SIDEBAR NAVIGATION -->
@@ -49,17 +53,41 @@
                     {{ profile.get_vehicle_type_display|default:"Standard Vehicle" }}
                 </span>
             </div>
-            <form action="{% url 'logout' %}" method="post" class="w-full">
-                {% csrf_token %}
-                <button type="submit" class="w-full text-center bg-indigo-950 hover:bg-red-900/40 text-red-200 text-xs py-2 rounded transition font-medium cursor-pointer">
-                    Secure Sign Out
-                </button>
-            </form>
+           <form action="{% url 'accounts:logout' %}" method="post" class="w-full">
+    {% csrf_token %}
+    <button type="submit" class="w-full text-center bg-indigo-950 hover:bg-red-900/40 text-red-200 text-xs py-2 rounded transition font-medium cursor-pointer">
+        Secure Sign Out
+    </button>
+</form>
         </div>
     </div>
 
     <!-- MAIN APP CANVAS WORKSPACE -->
     <div class="flex-1 flex flex-col overflow-y-auto">
+        <!-- NOTIFICATION CENTER TOP BAR -->
+        <div class="bg-white border-b border-gray-200 px-6 py-3 flex flex-col gap-2" x-data="{ showNotification: true }">
+            <div class="flex justify-between items-center">
+                <div class="text-xs text-gray-500 font-medium flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    System Online & Syncing Live Location
+                </div>
+                
+                <!-- System & Django Messages Alerts Indicator -->
+                {% if messages %}
+                <div x-show="showNotification" class="flex items-center gap-3 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-lg text-sm text-indigo-900 shadow-sm transition">
+                    <span class="flex items-center gap-1.5 font-medium">
+                        🔔 
+                        {% for message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                    </span>
+                    <button @click="showNotification = false" class="text-indigo-400 hover:text-indigo-600 font-bold text-xs cursor-pointer">✕</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- APP ROUTE INCLUDES -->
         {% include 'dashboard/delivery/_delivery_queue.html' %}
         {% include 'dashboard/delivery/_delivery_performance.html' %}
         {% include 'dashboard/delivery/_delivery_support.html' %}

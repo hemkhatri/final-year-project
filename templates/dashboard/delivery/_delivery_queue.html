@@ -1,101 +1,190 @@
-<!-- templates/dashboard/delivery/_delivery_queue.html -->
-<div x-show="currentTab === 'queue'" class="p-6 space-y-6">
+<div x-show="currentTab === 'queue'" 
+     class="p-6 space-y-6"
+     x-data="{
+        map: null,
+        routeLayer: null,
+        riderMarker: null,
+        destinationMarker: null,
+        
+        // Track live distance/ETA values locally inside component state
+        currentDistance: 'Calculating...',
+        currentETA: 'Calculating...',
+
+        // HTML5 WatchPosition tracker updates real-time telemetry markers
+        initGPSWatcher() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        fetch('/accounts/api/location/update/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({ latitude: lat, longitude: lon })
+                        });
+                        
+                        if (this.map && this.riderMarker) {
+                            this.riderMarker.setLatLng([lat, lon]);
+                        }
+                    },
+                    (err) => console.warn('GPS Telemetry Tracking Error: ', err),
+                    { enableHighAccuracy: true, maximumAge: 10000 }
+                );
+            }
+        },
+
+        // Render functional road route geometries directly from OSRM Django view engine
+        drawOSRMRoute(orderId) {
+            fetch(`/accounts/api/route/${orderId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.route_geometry) {
+                        const coords = data.route_geometry.coordinates;
+                        const startPoint = [coords[0][1], coords[0][0]];
+                        const endPoint = [coords[coords.length - 1][1], coords[coords.length - 1][0]];
+
+                        if (!this.map) {
+                            this.map = L.map('delivery-map').setView(startPoint, 13);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors'
+                            }).addTo(this.map);
+
+                            this.riderMarker = L.marker(startPoint).addTo(this.map).bindPopup('Your Current Location');
+                            this.destinationMarker = L.marker(endPoint).addTo(this.map).bindPopup('Customer Delivery Destination');
+                        } else {
+                            this.riderMarker.setLatLng(startPoint);
+                            this.destinationMarker.setLatLng(endPoint);
+                        }
+
+                        if (this.routeLayer) {
+                            this.map.removeLayer(this.routeLayer);
+                        }
+
+                        this.routeLayer = L.geoJSON(data.route_geometry, {
+                            style: { color: '#4f46e5', weight: 5, opacity: 0.85 }
+                        }).addTo(this.map);
+
+                        this.map.fitBounds(this.routeLayer.getBounds(), { padding: [30, 30] });
+
+                        this.currentDistance = data.distance_km + ' km';
+                        this.currentETA = data.duration_mins + ' mins';
+                    }
+                })
+                .catch(err => console.error('Routing system connection error:', err));
+        }
+     }"
+     x-init="initGPSWatcher()">
+
     <div class="flex justify-between items-center border-b border-gray-200 pb-4">
         <h2 class="text-2xl font-bold text-gray-800">Live Delivery Queue</h2>
         <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-            <span x-text="activeQueue.length"></span> Runs Remaining
+            Accepted Operations Queue
         </span>
     </div>
 
-    <!-- Master Layout Split: Queue list and Map/Details -->
+    <!-- Master Layout Split: Backend List Queue and Interactive Map View Panels -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Queue List -->
-        <div class="lg:col-span-1 space-y-4">
-            <template x-for="order in activeQueue" :key="order.id">
-                <div @click="activeDeliveryId = order.id" 
-                     :class="activeDeliveryId === order.id ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-gray-300'"
-                     class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-bold text-gray-900" x-text="order.id"></span>
-                        <span :class="order.priority === 'Express' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'" 
-                              class="text-[10px] uppercase font-bold px-2 py-0.5 rounded" x-text="order.priority"></span>
-                    </div>
-                    <p class="text-sm font-medium text-gray-700 truncate" x-text="order.customer"></p>
-                    <p class="text-xs text-gray-500 line-clamp-2 mt-1" x-text="order.address"></p>
-                    <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
-                        <span :class="order.type === 'COD' ? 'text-amber-700 bg-amber-50 font-semibold px-2 py-0.5 rounded' : 'text-green-700 bg-green-50 font-semibold px-2 py-0.5 rounded'" 
-                              x-text="order.type === 'COD' ? 'COD: ' + order.amount : 'Prepaid'"></span>
-                        <span class="text-gray-400" x-text="'ETA: ' + order.eta"></span>
-                    </div>
-                </div>
-            </template>
+        
+        <!-- Queue List Pipeline mapped directly to live Django Querysets Models -->
+       <div class="lg:col-span-1 space-y-4">
+            {% if orders %}
+                {% for order in orders %}
+                    {% if order.status == 'ACCEPTED' %}
+                        <div @click="activeDeliveryId = '{{ order.id }}'; $nextTick(() => drawOSRMRoute('{{ order.id }}'))" 
+                             :class="activeDeliveryId === '{{ order.id }}' ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-gray-300'"
+                             class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer transition">
+                            
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-bold text-gray-900">Order #{{ order.id }}</span>
+                                <!-- ... rest of your order card markup ... -->
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Optional Empty State Panel fallback if no orders exist -->
+                <p class="text-sm text-gray-500 italic">No items currently active in queue.</p>
+            {% endif %}
         </div>
 
-        <!-- Logistics Map Panel & Verification View -->
+        <!-- Logistics Map Panel & Target Customer Detail View Workspaces -->
         <div class="lg:col-span-2 space-y-6">
-            <template x-if="activeDeliveryId">
-                <div x-data="{ currentOrder: activeQueue.find(o => o.id === activeDeliveryId), podMode: false }">
-                    <!-- Map Canvas Representation -->
-                    <div class="bg-gray-200 h-64 rounded-xl relative overflow-hidden flex items-center justify-center border border-gray-300 shadow-inner">
-                        <div class="text-center p-4">
-                            <span class="text-3xl block mb-2">📍</span>
-                            <span class="text-sm font-semibold text-gray-700 block">Routing Engine Component</span>
-                            <span class="text-xs text-gray-500" x-text="'Simulating path optimization to ' + currentOrder.address"></span>
-                        </div>
-                        <!-- Live Routing Metrics overlay -->
-                        <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-3 py-2 rounded-lg text-xs font-medium text-gray-800 shadow flex gap-4">
-                            <div>🏁 <span class="font-bold" x-text="currentOrder.distance"></span></div>
-                            <div>⏱️ <span class="font-bold" x-text="currentOrder.eta"></span></div>
-                        </div>
-                    </div>
+            {% for order in orders %}
+                {% if order.status == 'ACCEPTED' %}
+                    <template x-if="activeDeliveryId === '{{ order.id }}'">
+                        <div x-data="{ podMode: false }">
+                            
+                            <!-- Leaflet Map Drawing Canvas Box -->
+                            <div id="delivery-map" class="h-64 rounded-xl relative overflow-hidden border border-gray-300 shadow-inner z-10"></div>
 
-                    <!-- Client Interaction Strip -->
-                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-4 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-gray-900" x-text="currentOrder.customer"></h4>
-                            <p class="text-xs text-gray-500 truncate max-w-sm" x-text="currentOrder.address"></p>
-                        </div>
-                        <a :href="'tel:' + currentOrder.phone" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition">
-                            📞 Contact Client
-                        </a>
-                    </div>
-
-                    <!-- Workflow Actions -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4">
-                        <div x-show="!podMode" class="space-y-4">
-                            <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Update Order Journey Status</h4>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">🚚 En Route</button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">📍 Arrived</button>
-                                <button @click="podMode = true" class="bg-green-600 hover:bg-green-700 text-white text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">✓ Delivered</button>
-                                <button class="bg-red-50 hover:bg-red-100 text-red-700 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">✗ Failed Attempt</button>
-                            </div>
-                        </div>
-
-                        <!-- Proof of Delivery Interface -->
-                        <div x-show="podMode" class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Proof of Delivery (POD) Requirement</h4>
-                                <button @click="podMode = false" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
-                            </div>
-                            <div class="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
-                                <span class="text-xs text-gray-500 block mb-2">Digital Signature Pad Workspace / Photo Attachment Capture</span>
-                                <div class="bg-white border border-gray-200 h-24 max-w-xs mx-auto rounded shadow-inner flex items-center justify-center text-gray-300 text-xs">
-                                    [Sign Here]
+                            <!-- Live Spatial Telemetry Metric Readouts Layer Bar -->
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-center">
+                                    <span class="block text-xs text-gray-400 uppercase font-bold tracking-wider">Distance Remaining</span>
+                                    <span class="text-lg font-bold text-gray-800" x-text="currentDistance"></span>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-center">
+                                    <span class="block text-xs text-gray-400 uppercase font-bold tracking-wider">Estimated Time (ETA)</span>
+                                    <span class="text-lg font-bold text-indigo-600" x-text="currentETA"></span>
                                 </div>
                             </div>
-                            <button @click="podMode = false; activeDeliveryId = null" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2.5 rounded-lg font-bold transition cursor-pointer">
-                                Submit Verification Data & Close Task
-                            </button>
+
+                            <!-- Client Interaction Info Box Panel Layout -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-4 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-gray-900">{{ order.customer.get_full_name|default:order.customer.username }}</h4>
+                                    <p class="text-xs text-gray-500 truncate max-w-sm mt-0.5">
+                                        {{ order.shipping_address|default:"No address set" }}
+                                    </p>
+                                    <p class="text-xs text-indigo-600 font-medium mt-1">Status: {{ order.get_status_display }}</p>
+                                </div>
+                                <a href="tel:{{ order.customer.customer_profile.phone_number|default:'' }}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex items-center gap-1">
+                                    📞 Contact Client
+                                </a>
+                            </div>
+
+                            <!-- Workflow Engine Status Action Trigger Buttons -->
+                            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4">
+                                <div x-show="!podMode" class="space-y-4">
+                                    <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Update Order Journey Status</h4>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">🚚 En Route</button>
+                                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">📍 Arrived</button>
+                                        <button @click="podMode = true" class="bg-green-600 hover:bg-green-700 text-white text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">✓ Delivered</button>
+                                        <button class="bg-red-50 hover:bg-red-100 text-red-700 text-xs py-2.5 px-2 rounded-lg font-medium transition cursor-pointer">✗ Failed Attempt</button>
+                                    </div>
+                                </div>
+
+                                <!-- Proof of Delivery Interface Workspace -->
+                                <div x-show="podMode" class="space-y-4">
+                                    <div class="flex justify-between items-center">
+                                        <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Proof of Delivery (POD) Requirement</h4>
+                                        <button @click="podMode = false" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                                    </div>
+                                    <div class="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+                                        <span class="text-xs text-gray-500 block mb-2">Digital Signature Pad Workspace</span>
+                                        <div class="bg-white border border-gray-200 h-24 max-w-xs mx-auto rounded shadow-inner flex items-center justify-center text-gray-300 text-xs font-mono">
+                                            [Sign Here - Order #{{ order.id }}]
+                                        </div>
+                                    </div>
+                                    <button @click="podMode = false; activeDeliveryId = null; map = null" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2.5 rounded-lg font-bold transition cursor-pointer">
+                                        Submit Verification Data & Close Task
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </template>
+                    </template>
+                {% endif %}
+            {% endfor %}
             
             <template x-if="!activeDeliveryId">
-                <div class="bg-white p-12 rounded-xl border border-gray-200 text-center text-gray-400">
+                <div class="bg-white p-12 rounded-xl border border-gray-200 text-center text-gray-400 shadow-sm">
                     <span class="text-4xl block mb-2">📋</span>
-                    Select an active deployment run from the queue pipeline to display tracking metrics, customer data, and status actions.
+                    Select an active, accepted delivery run from the queue pipeline to display metrics and target actions.
                 </div>
             </template>
         </div>

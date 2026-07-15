@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
 from shop.views import ProductListView 
+from django.contrib.auth import views as auth_views
 
 def root_redirect_view(request):
     # If not logged in, let them browse the marketplace anonymously!
@@ -39,12 +40,12 @@ def root_redirect_view(request):
 urlpatterns = [
     path('', root_redirect_view, name='root_redirect'),
     path('admin/', admin.site.urls),
-    
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     # 2. Properly include ALL paths from your accounts app (signup, delivery, redirect, etc.)
     path('accounts/', include('accounts.urls')), 
     
     # 3. Built-in auth views (login, logout) go below it
-    path('accounts/', include('django.contrib.auth.urls')), 
+    path('accounts/', include('accounts.urls')),
     
     path('shop/', include('shop.urls')), 
     path("assistant/", include("assistant.urls")),

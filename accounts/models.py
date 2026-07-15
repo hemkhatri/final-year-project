@@ -4,8 +4,9 @@ from django.db.models import F, Value
 from django.db.models.functions import ACos, Cos, Radians, Sin
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# Create your models here.
+from django.utils import timezone
 
+# Create your models here.
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -14,38 +15,39 @@ class User(AbstractUser):
         CUSTOMER = "CUSTOMER", "Customer"
         DELIVERY_BOY = "DELIVERY_BOY", "Delivery Boy" #Added new user
 
-        # default role is customer if no role is assigned
     base_role = Role.CUSTOMER
     
     role = models.CharField(
-        max_length= 50,
-        choices= Role.choices,
-        default= base_role
+        max_length=50,
+        choices=Role.choices,
+        default=base_role
     )
 
     def save(self, *args, **kwargs):
         # auto set internal flags based on django ecosystem
         if self.role == self.Role.ADMIN:
             self.is_staff = True
-        super().save(*args,  **kwargs)
+        super().save(*args, **kwargs)
 
 
 class SellerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete= models.CASCADE, related_name= "seller_profile")
-    store_name = models.CharField(max_length= 255)
-    business_licence = models.CharField(max_length= 100)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="seller_profile")
+    store_name = models.CharField(max_length=255)
+    business_licence = models.CharField(max_length=100)
 
     def __str__(self):
         return self.user.username
 
+
 class CustomerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete= models.CASCADE, related_name = "customer_profile")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="customer_profile")
     shipping_address = models.TextField()
-    phone_number = models.CharField(max_length= 20)
+    phone_number = models.CharField(max_length=20)
 
     def __str__(self):
         return self.user.username
     
+
 class DeliveryBoyProfile(models.Model):
     class VechileType(models.TextChoices):
         BIKE = "BIKE", "Bike"
@@ -56,11 +58,9 @@ class DeliveryBoyProfile(models.Model):
     is_available = models.BooleanField(default=True)
     is_busy = models.BooleanField(default=False)
 
-    # Store real-time coordinates of the delivery boy
     longitude = models.DecimalField(max_digits=9, decimal_places=6, default=0.0)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, default=0.0)
 
-    # Vehicle details moved here where they belong
     licence_number = models.CharField(max_length=50, blank=True, null=True)
     vechile_type = models.CharField(max_length=20, choices=VechileType.choices, default=VechileType.BIKE)
 
@@ -80,13 +80,12 @@ class DeliveryBoyProfile(models.Model):
         if not candidates.exists():
             return None
         
-        # Fixed mathematical brackets for the longitude cosine difference
         distance_expression = (
             ACos(
                 Sin(Radians(F('latitude'))) * Sin(Radians(Value(customer_lat))) +
                 Cos(Radians(F('latitude'))) * Cos(Radians(Value(customer_lat))) *
                 Cos(Radians(F('longitude') - Value(customer_lon)))                          
-            ) * 6371  # Yes, Earth's radius in km! 🌍
+            ) * 6371
         )
 
         nearest_driver = candidates.annotate(
@@ -94,7 +93,7 @@ class DeliveryBoyProfile(models.Model):
         ).order_by('distance').first()
 
         return nearest_driver
-    
+
 
 class Order(models.Model):
     class Status(models.TextChoices):
@@ -105,34 +104,46 @@ class Order(models.Model):
         CANCELLED = "CANCELLED", "Cancelled"
 
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_orders")
-
-    # Delivery destination coordinates
     delivery_latitude = models.DecimalField(max_digits=9, decimal_places=6)
     delivery_longitude = models.DecimalField(max_digits=9, decimal_places=6)
-
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PLACED)
-
     current_delivery_boy = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_deliveries"
     )
-
     rejected_by = models.ManyToManyField(User, blank=True, related_name="rejected_orders")
-    created_at = models.DateTimeField(auto_now_add=True)  # Changed to auto_now_add for creation timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Link to shop order (optional but recommended)
+    shop_order_id = models.IntegerField(null=True, blank=True)  # Reference to shop.models.Order.id
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer.username}"
-    
 
+
+# Track the 20-minute acceptance lifecycle per dispatch attempt
+class AssignmentAttempt(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Response'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        TIMEOUT = 'TIMEOUT', 'Timed Out after 20 mins'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='assignment_attempts')
+    driver = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# Keep your signals intact
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    """
-    Automatically creates the correct profile object based on the 
-    user's assigned role when a new user account is registered.
-    """
     if created:
-        if instance.role == User.Role.DELIVERY_BOY:
-            DeliveryBoyProfile.objects.get_or_create(user=instance)
-        elif instance.role == User.Role.SELLER:
-            SellerProfile.objects.get_or_create(user=instance)
-        elif instance.role == User.Role.CUSTOMER:
-            CustomerProfile.objects.get_or_create(user=instance)
+        if hasattr(User, 'Role'):  # Safety check for role structures
+            if instance.role == User.Role.DELIVERY_BOY:
+                DeliveryBoyProfile.objects.get_or_create(user=instance)
+            elif instance.role == User.Role.SELLER:
+                SellerProfile.objects.get_or_create(user=instance)
+            elif instance.role == User.Role.CUSTOMER:
+                CustomerProfile.objects.get_or_create(user=instance)
+
+
