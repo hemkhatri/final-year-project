@@ -26,15 +26,50 @@
                     <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Safety Trust</a></li>
                 </ul>
             </div>
+            
+            <!-- DYNAMIC COLUMN: Swaps based on Admin Clearance -->
             <div>
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Legal</h3>
-                <ul class="space-y-2.5">
-                    <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Terms of Service</a></li>
-                    <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Cookie Controls</a></li>
-                </ul>
+                {% if user.is_authenticated and user.is_staff %}
+                    <h3 class="text-xs font-bold text-red-600 uppercase tracking-wider mb-4">System Node Admin</h3>
+                    <ul class="space-y-2.5">
+                        <li>
+                            <a href="{% url 'accounts:admin_dashboard' %}" class="inline-flex items-center gap-1.5 text-red-950 font-bold hover:text-red-700 transition-colors">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
+                                Operations Console
+                            </a>
+                        </li>
+                        <li><a href="/admin/" target="_blank" class="text-gray-600 hover:text-red-700 transition-colors font-semibold">Django Core DB Data</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-red-700 transition-colors">Platform Audit Logs</a></li>
+                    </ul>
+                {% else %}
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Legal</h3>
+                    <ul class="space-y-2.5">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Cookie Controls</a></li>
+                    </ul>
+                {% endif %}
             </div>
         </div>
+
+        <!-- DYNAMIC ADMINISTRATIVE SYSTEM BANNER COMPONENT -->
+        {% if user.is_authenticated and user.is_staff %}
+            <div class="mb-6 p-4 bg-red-950 text-white rounded-xl border border-red-900/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center font-black text-sm">Ω</div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-red-200">System Administrator Node Identity Active</p>
+                        <p class="text-[11px] text-red-300/70">Secure Session Auth Token Hash confirmed.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'accounts:admin_dashboard' %}" class="px-3 py-1.5 bg-red-800 hover:bg-red-700 transition rounded-md text-xs font-bold tracking-wide uppercase">
+                        Quick Launch Workspace
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
         <div class="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
             <p>&copy; 2026 Marketplace Inc. All rights reserved.</p>
             <div class="flex space-x-6">

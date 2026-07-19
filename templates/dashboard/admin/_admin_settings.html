@@ -1,0 +1,117 @@
+<!-- templates/dashboard/admin/_admin_settings.html -->
+<div x-show="currentTab === 'governance'" x-data="governanceControlEngine()" class="p-6 space-y-6">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Platform Governance Settings</h2>
+        <p class="text-sm text-slate-500">Technical infrastructure switches and commission rates engines.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Commission Fee Configuration Elevated Box Card -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <h3 class="text-sm font-bold text-red-950 uppercase tracking-wider border-b pb-2 flex items-center gap-2">
+                💰 Commission Fee Engines
+            </h3>
+            
+            <!-- Global Range Config -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-xs font-bold text-slate-700">
+                    <span>Global Take-Rate Base</span>
+                    <span class="font-mono text-red-700" x-text="rates.global + '%'">10%</span>
+                </div>
+                <input type="range" min="1" max="50" x-model="rates.global" @input="logChange('Global commission adjusted to ' + rates.global + '%')" class="w-full accent-red-700 cursor-ew-resize">
+            </div>
+
+            <!-- Granular Specific Category Sub-sliders -->
+            <div class="pt-2 space-y-4 border-t border-slate-100">
+                <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Category Specific Multipliers</span>
+                
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-medium text-slate-600">
+                        <span>Electronics Node</span>
+                        <span class="font-mono font-bold" x-text="rates.electronics + '%'">5%</span>
+                    </div>
+                    <input type="range" min="1" max="30" x-model="rates.electronics" @input="logChange('Electronics split moved to ' + rates.electronics + '%')" class="w-full accent-slate-700 scale-95 cursor-ew-resize">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-medium text-slate-600">
+                        <span>Apparel & Fabrics</span>
+                        <span class="font-mono font-bold" x-text="rates.apparel + '%'">12%</span>
+                    </div>
+                    <input type="range" min="1" max="30" x-model="rates.apparel" @input="logChange('Apparel rate moved to ' + rates.apparel + '%')" class="w-full accent-slate-700 scale-95 cursor-ew-resize">
+                </div>
+            </div>
+        </div>
+
+        <!-- Infrastructure Status Interactive Switches Card -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <h3 class="text-sm font-bold text-slate-950 uppercase tracking-wider border-b pb-2">
+                🔌 Hardware Infrastructure Gateways
+            </h3>
+            
+            <div class="space-y-4">
+                <!-- Toggle Switch Component 1 -->
+                <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div class="text-xs">
+                        <p class="font-bold text-slate-900">Stripe Checkout Payment API Gateway</p>
+                        <p class="text-slate-400 text-[11px]" x-text="toggles.stripe ? 'Routing platform inbound settlement wires' : 'Transactions disabled'"></p>
+                    </div>
+                    <button @click="toggles.stripe = !toggles.stripe; logChange('Stripe framework state toggled to ' + toggles.stripe)" 
+                            :class="toggles.stripe ? 'bg-emerald-500' : 'bg-slate-300'" 
+                            class="w-10 h-6 rounded-full transition relative p-0.5 cursor-pointer">
+                        <div :class="toggles.stripe ? 'translate-x-4' : 'translate-x-0'" class="w-5 h-5 bg-white rounded-full transition shadow-sm"></div>
+                    </button>
+                </div>
+
+                <!-- Toggle Switch Component 2 -->
+                <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div class="text-xs">
+                        <p class="font-bold text-slate-900">Map Logistics Fleet Tracking Relay API</p>
+                        <p class="text-slate-400 text-[11px]" x-text="toggles.maps ? 'Polling geolocation vectors active' : 'Tracking paused'"></p>
+                    </div>
+                    <button @click="toggles.maps = !toggles.maps; logChange('Logistics feed sync toggled to ' + toggles.maps)" 
+                            :class="toggles.maps ? 'bg-emerald-500' : 'bg-slate-300'" 
+                            class="w-10 h-6 rounded-full transition relative p-0.5 cursor-pointer">
+                        <div :class="toggles.maps ? 'translate-x-4' : 'translate-x-0'" class="w-5 h-5 bg-white rounded-full transition shadow-sm"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logging Stream Window Box -->
+    <div class="bg-slate-900 p-4 rounded-xl font-mono text-xs text-slate-300 space-y-2 border border-slate-950 shadow-inner">
+        <span class="text-[10px] font-black tracking-wider text-slate-500 block uppercase">Real-Time Settings Audit Log</span>
+        <div class="max-h-24 overflow-y-auto space-y-1 text-[11px] text-emerald-400/90">
+            <template x-for="log in auditLogs">
+                <p x-text="`[${new Date().toLocaleTimeString()}] ${log}`"></p>
+            </template>
+        </div>
+    </div>
+
+    <!-- Save Configuration Global Controls Button Matrix -->
+    <div class="flex justify-end pt-2">
+        <button @click="saveConfiguration()" class="w-full sm:w-auto px-6 py-3 bg-red-700 hover:bg-red-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-md cursor-pointer">
+            Save Governance Configuration Changes
+        </button>
+    </div>
+
+    <script>
+        function governanceControlEngine() {
+            return {
+                rates: { global: 10, electronics: 5, apparel: 12 },
+                toggles: { stripe: true, maps: true },
+                auditLogs: ['System configurations established securely.'],
+                
+                logChange(msg) {
+                    if(this.auditLogs.length > 4) this.auditLogs.shift();
+                    this.auditLogs.push(msg);
+                },
+                saveConfiguration() {
+                    alert('System configurations committed and securely broadcast to platform distribution database arrays.');
+                    this.logChange('State locked and pushed to live operational nodes successfully.');
+                }
+            }
+        }
+    </script>
+</div>

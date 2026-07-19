@@ -8,6 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta class="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}Marketplace Central{% endblock %}</title>
+    <!-- Put this script inside your base template <head> tag -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Google Fonts: Montserrat -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,11 +55,15 @@
     </main>
     {% endblock main_wrapper %}
     
-    <!-- Global Footer -->
-    {% include 'includes/footer.html' %}
+    <!-- Global Footer with Block Override Capabilities -->
+    {% block footer_content %}
+        {% include 'includes/footer.html' %}
+    {% endblock footer_content %}
 
-    <!-- AI Assistant Floating Button -->
-    {% include 'includes/ai_assistant.html' %}
+    <!-- AI Assistant Floating Button (Only visible to authenticated clients) -->
+    {% if user.is_authenticated %}
+        {% include 'includes/ai_assistant.html' %}
+    {% endif %}
 </body>
 
 </html>

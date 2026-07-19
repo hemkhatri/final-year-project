@@ -1,0 +1,101 @@
+<!-- templates/dashboard/admin/_admin_tickets.html -->
+<div x-show="currentTab === 'tickets'" x-data="ticketWorkspace()" class="p-6 space-y-6">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">AI Smart Ticket Center</h2>
+        <p class="text-sm text-slate-500">Platform disputes summarized instantly by customer support AI models.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Inbox Card List Queue -->
+        <div class="space-y-3">
+            <template x-for="ticket in tickets" :key="ticket.id">
+                <div @click="activeId = ticket.id" 
+                     :class="activeId === ticket.id ? 'border-red-600 bg-red-50/40 ring-1 ring-red-600' : 'border-slate-200 bg-white hover:bg-slate-50'"
+                     class="p-4 rounded-xl border cursor-pointer transition relative">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 text-white" x-text="ticket.badge"></span>
+                        <!-- Added Time-Received Badge -->
+                        <span class="text-xs font-semibold text-slate-400" x-text="ticket.timeAgo"></span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900" x-text="ticket.title"></h4>
+                    <p class="text-xs text-slate-600 mt-1 line-clamp-2" x-text="ticket.summary"></p>
+                </div>
+            </template>
+        </div>
+
+        <!-- Dynamic Evidence Workspace Case Display -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[500px]">
+            <div class="space-y-6">
+                <h3 class="text-base font-bold text-slate-900 border-b pb-3" x-text="getActive().title"></h3>
+                
+                <!-- 2-Column Balanced Height Grid Layout -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <span class="text-[10px] font-black tracking-wider text-slate-400 block mb-2 uppercase">Customer Statement</span>
+                            <p class="text-xs text-slate-700 leading-relaxed" x-text="getActive().customerText"></p>
+                        </div>
+                        
+                        <!-- Expandable Thumbnail Preview Block -->
+                        <div class="mt-4" x-data="{ open: false }">
+                            <img @click="open = true" src="https://images.unsplash.com/photo-1595246140625-573b715d11dc?w=150&q=80" 
+                                 class="w-16 h-16 object-cover rounded-lg border border-slate-300 cursor-zoom-in hover:opacity-80 transition shadow-sm">
+                            <!-- Zoom Lightbox Modal -->
+                            <div x-show="open" @click.away="open = false" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                                <img src="https://images.unsplash.com/photo-1595246140625-573b715d11dc?w=800&q=80" class="max-w-full max-h-full rounded-xl shadow-2xl">
+                                <button @click="open = false" class="absolute top-4 right-4 text-white text-xs font-bold bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/40 cursor-pointer">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-[10px] font-black tracking-wider text-slate-400 block mb-2 uppercase">Seller Logs</span>
+                        <p class="text-xs text-slate-700 leading-relaxed" x-text="getActive().sellerText"></p>
+                    </div>
+                </div>
+
+                <!-- Styled Light-Gray Chat Feed Bubble Workspace -->
+                <div class="space-y-3">
+                    <span class="text-[10px] font-black tracking-wider text-slate-400 block uppercase">Platform Chat Extracts</span>
+                    <div class="p-4 bg-slate-50 rounded-xl space-y-3 max-h-48 overflow-y-auto border border-slate-100 shadow-inner">
+                        <div class="flex items-start gap-2">
+                            <div class="bg-slate-200 text-slate-800 text-xs p-2.5 rounded-xl max-w-md shadow-sm">
+                                <strong class="block text-[10px] text-slate-500 mb-0.5">Customer</strong>
+                                The shipping container box looked completely flattened by heavy machinery.
+                            </div>
+                        </div>
+                        <div class="flex items-start justify-end gap-2">
+                            <div class="bg-white text-slate-800 text-xs p-2.5 rounded-xl max-w-md border border-slate-200 shadow-sm">
+                                <strong class="block text-[10px] text-red-700 mb-0.5">Merchant Store</strong>
+                                We shipped items in perfect custom structural industrial grade packages. Please file an appeal.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Title Case Actions Matrix - Relocated to Bottom Right -->
+            <div class="border-t pt-4 flex justify-end gap-3 mt-6">
+                <button @click="alert('Refund Processed')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs tracking-wide uppercase transition cursor-pointer">
+                    Issue Warning to Seller
+                </button>
+                <button @click="alert('Refund Processed')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs tracking-wide uppercase transition cursor-pointer">
+                    Initiate 100% Refund
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function ticketWorkspace() {
+            return {
+                activeId: 1,
+                tickets: [
+                    { id: 1, title: 'Damaged Cargo Dispute', timeAgo: '10m ago', badge: 'URGENT', summary: 'Package arrived crushed; customer demands refund intervention.', customerText: 'Package flattened on delivery. Heavy box impact noticeable.', sellerText: 'Order shipped inside brand new structural padding cartons.' },
+                    { id: 2, title: 'Counterfeit Device Claim', timeAgo: '2h ago', badge: 'HIGH RISK', summary: 'Client claims device serial number does not pass repository clearance checks.', customerText: 'Serial codes return no authentic validation match logs.', sellerText: 'Items procured directly from factory distribution paths.' }
+                ],
+                getActive() { return this.tickets.find(t => t.id === this.activeId); }
+            }
+        }
+    </script>
+</div>

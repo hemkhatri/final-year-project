@@ -1,0 +1,53 @@
+<!-- templates/dashboard/admin/_admin_customers.html -->
+<div x-show="currentTab === 'customers'" class="p-6 space-y-6">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Consumer Directory</h2>
+        <p class="text-sm text-slate-500">Prevent system abuse and track customer lifetime statistics.</p>
+    </div>
+
+    <!-- Control Header Filter -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="relative max-w-md">
+            <input type="text" placeholder="Find customer accounts by ID or phone handle..." 
+                   class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 text-xs rounded-lg focus:outline-none focus:border-slate-400">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+    </div>
+
+    <!-- Borderless Clean Directory Table -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 font-bold uppercase text-slate-400 border-b border-slate-200">
+                <tr>
+                    <th class="p-4">Customer Username</th>
+                    <th class="p-4">Wallet Balance</th>
+                    <th class="p-4">Membership</th>
+                    <th class="p-4 text-center">Safety Status</th>
+                    <th class="p-4 text-right">Administrative Actions</th>
+                </tr>
+            </thead>
+            <!-- Clear horizontal row dividing rules (#e2e8f0 equivalent via divide-y) -->
+            <tbody class="divide-y divide-slate-200/60 text-slate-700 font-medium">
+                <tr class="hover:bg-slate-50/50 transition">
+                    <!-- Avatar and Modal Drawer Anchor Integration -->
+                    <td class="p-4 flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full bg-red-100 text-red-900 flex items-center justify-center font-bold text-[10px] shadow-inner">SJ</div>
+                        <a href="#" @click.prevent="alert('Triggering full order lifecycle drawer modal...')" class="font-bold text-slate-900 hover:text-red-700 hover:underline">Sarah Jenkins</a>
+                    </td>
+                    <td class="p-4 font-mono font-semibold">$250.00</td>
+                    <td class="p-4 font-semibold text-slate-600">Platinum Premium</td>
+                    <!-- Transformed Capsule Green Pill Container -->
+                    <td class="p-4 text-center">
+                        <span class="px-2.5 py-0.5 inline-block text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded-full uppercase tracking-wide">Safe Profile</span>
+                    </td>
+                    <!-- Brand New Core Action Links Hub Grid Row -->
+                    <td class="p-4 text-right space-x-1">
+                        <button @click="alert('Credit issued')" class="px-2 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded hover:bg-slate-100 font-semibold cursor-pointer">Issue Credit</button>
+                        <button @click="alert('Account flagged')" class="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100 font-semibold cursor-pointer">Flag Account</button>
+                        <button @click="alert('User suspended')" class="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 font-bold cursor-pointer">Suspend</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
