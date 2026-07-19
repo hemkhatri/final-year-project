@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Operations Control Tower{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Block -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-6 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">System Operations Command</h1>
+            <p class="text-sm text-gray-500 mt-1">Real-time dispatch control and multi-role escalation management panel.</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <!-- 🔑 CHANGED HERE: Added 'accounts:' namespace -->
+            <a href="{% url 'accounts:admin_support_dashboard' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition">
+                Open Support Tickets Desk
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Actions: Active Dispatches Workspace -->
+        <div class="lg:col-span-2 space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Manual Order Interventions</h2>
+            
+            {% if active_orders %}
+                {% for order in active_orders %}
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6" id="order-card-{{ order.id }}">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-amber-100 text-amber-800">
+                                {{ order.get_status_display }}
+                            </span>
+                            <h3 class="text-lg font-bold text-gray-900 mt-2">Order #{{ order.id }}</h3>
+                        </div>
+                        <div class="text-right text-xs text-gray-400">
+                            Placed: {{ order.created_at|date:"M d, H:i" }}
+                        </div>
+                    </div>
+
+                    <div class="text-sm text-gray-600 space-y-1 mb-6">
+                        <p><strong>Customer:</strong> {{ order.customer.username }}</p>
+                        <p><strong>Current Rider:</strong> 
+                            {% if order.current_delivery_boy %}
+                                <span class="text-indigo-600 font-medium">{{ order.current_delivery_boy.username }}</span>
+                            {% else %}
+                                <span class="text-gray-400 italic">Unassigned (Searching Pool)</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Interactive Override Row -->
+                    <div class="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex flex-1 gap-2">
+                            <select id="rider-select-{{ order.id }}" class="block w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">-- Explicitly Override Rider --</option>
+                                {% for rider in available_riders %}
+                                    <option value="{{ rider.user.id }}">{{ rider.user.username }} ({% if rider.is_busy %}Busy{% else %}Available{% endif %})</option>
+                                {% endfor %}
+                            </select>
+                            <button onclick="executeOverride({{ order.id }}, 'force_assign')" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                                Assign
+                            </button>
+                        </div>
+                        
+                        <button onclick="executeOverride({{ order.id }}, 'reset_and_reassign')" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition whitespace-nowrap">
+                            Reset & Reassign
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <p class="text-gray-500 text-sm">No live orders currently pending queue assignment or manual routing.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar Panel: Operational Flagged Alerts Desk -->
+        <div class="space-y-6">
+            <div class="bg-gray-900 text-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-2">Urgent Reports Queue</h3>
+                <p class="text-xs text-gray-400 mb-4">Latest high-priority complaints requiring administrative ticket resolution.</p>
+                
+                <div class="space-y-4">
+                    {% if recent_tickets %}
+                        {% for ticket in recent_tickets %}
+                        <div class="bg-gray-800 p-4 rounded-lg border-l-4 {% if ticket.priority == 'URGENT' %}border-red-500{% else %}border-amber-500{% endif %}">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="text-sm font-semibold truncate max-w-[180px] text-gray-100">{{ ticket.subject }}</h4>
+                                <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded {% if ticket.priority == 'URGENT' %}bg-red-900/50 text-red-400{% else %}bg-amber-900/50 text-amber-400{% endif %}">
+                                    {{ ticket.priority }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-2 line-clamp-2">{{ ticket.description }}</p>
+                            <div class="flex justify-between items-center text-[11px] text-gray-500">
+                                <span>By: {{ ticket.user.username }} ({{ ticket.get_submitted_as_role_display }})</span>
+                                <!-- 🔑 CHANGED HERE: Added 'accounts:' namespace -->
+                                <a href="{% url 'accounts:admin_support_dashboard' %}" class="text-indigo-400 hover:underline font-medium">Resolve &rarr;</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-xs text-gray-500 italic text-center py-4">All operational fields running completely clean.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AJAX Dynamic Operational Handler Script -->
+<script>
+function executeOverride(orderId, actionType) {
+    // 🔑 CHANGED HERE: Prepend /accounts to the hardcoded endpoint path to track view matching
+    const url = `/accounts/api/admin/orders/${orderId}/override/`;
+    let payload = { action: actionType };
+
+    if (actionType === 'force_assign') {
+        const selectEl = document.getElementById(`rider-select-${orderId}`);
+        const riderId = selectEl.value;
+        if (!riderId) {
+            alert('Please select an active delivery boy profile target first.');
+            return;
+        }
+        payload.rider_id = riderId;
+    }
+
+    if (!confirm(`Confirm execution of admin action [${actionType}] on Order #${orderId}?`)) {
+        return;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (response.ok) {
+            alert(data.message || 'Operation processed completely.');
+            window.location.reload(); 
+        } else {
+            alert(`Error: ${data.error || 'Execution block failed.'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Network Error Flag:', error);
+        alert('Critical connection failure communicating with system backend routing APIs.');
+    });
+}
+</script>
+{% endblock %}

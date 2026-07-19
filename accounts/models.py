@@ -127,6 +127,7 @@ class AssignmentAttempt(models.Model):
         ACCEPTED = 'ACCEPTED', 'Accepted'
         TIMEOUT = 'TIMEOUT', 'Timed Out after 20 mins'
         REJECTED = 'REJECTED', 'Rejected'
+        FORCED_BY_ADMIN = 'FORCED_BY_ADMIN', 'Forced by Admin Override' # 👈 Add this row
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='assignment_attempts')
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -147,3 +148,44 @@ def create_user_profile(sender, instance, created, **kwargs):
                 CustomerProfile.objects.get_or_create(user=instance)
 
 
+
+
+class SupportTicket(models.Model):
+    class Priority(models.TextChoices):
+        LOW = "LOW", "Low"
+        MEDIUM = "MEDIUM", "Medium"
+        HIGH = "HIGH", "High"
+        URGENT = "URGENT", "Urgent / Missing Items"
+
+    class Category(models.TextChoices):
+        MISSING_ITEM = "MISSING_ITEM", "Missing Items in Order"
+        DAMAGE = "DAMAGE", "Damaged Goods"
+        DELIVERY_ISSUE = "DELIVERY_ISSUE", "Delivery Delay or Dispute"
+        PAYMENT = "PAYMENT", "Payment / Refund Issue"
+        OTHER = "OTHER", "General Inquiry"
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Open"
+        IN_PROGRESS = "IN_PROGRESS", "Under Investigation"
+        RESOLVED = "RESOLVED", "Resolved"
+        CLOSED = "CLOSED", "Closed"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="support_tickets")
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="support_tickets")
+    
+    # Store the role of the user *at the time* they submitted the report
+    submitted_as_role = models.CharField(max_length=50, choices=User.Role.choices)
+    
+    category = models.CharField(max_length=30, choices=Category.choices, default=Category.OTHER)
+    priority = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Ticket #{self.id} [{self.category}] - {self.user.username}"

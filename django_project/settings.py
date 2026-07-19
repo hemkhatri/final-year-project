@@ -139,7 +139,7 @@ STATICFILES_DIRS = [
 AUTH_USER_MODEL = 'accounts.User'
 
 # Where to send users after they log in
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'accounts:smart_login_redirect'
 
 # Where to send users after they log out (optional but highly recommended)
 LOGOUT_REDIRECT_URL = 'login'

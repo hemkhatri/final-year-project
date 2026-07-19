@@ -1,0 +1,141 @@
+<!-- templates/includes/ai_assistant.html -->
+<div x-data="assistantWidget()" class="fixed bottom-6 right-6 z-50">
+    <!-- Chat Panel -->
+    <div x-show="open" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+        x-transition:leave-end="opacity-0 translate-y-4 scale-95" @click.outside="open = false"
+        class="absolute bottom-20 right-0 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        style="display: none">
+        <div class="bg-indigo-600 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-white">
+                <span class="text-lg">🤖</span>
+                <span class="font-semibold text-sm">Yatra Mart Assistant</span>
+            </div>
+            <button @click="open = false" class="text-white/80 hover:text-white">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Messages -->
+        <div x-ref="messageBox" class="p-4 h-72 overflow-y-auto text-sm bg-gray-50 space-y-3">
+            <template x-for="msg in messages" :key="msg.id">
+                <div :class="msg.role === 'user' ? 'text-right' : 'text-left'">
+                    <div x-show="msg.text" :class="msg.role === 'user' ? 'inline-block bg-indigo-600 text-white rounded-lg px-3 py-2 max-w-[85%] text-left' : 'inline-block bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm max-w-[85%] text-gray-700'" x-text="msg.text"></div>
+                    <div x-show="msg.products && msg.products.length" class="mt-2 space-y-2">
+                        <template x-for="product in msg.products" :key="product.link">
+                            <a :href="product.link" target="_blank" class="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-2 shadow-sm hover:shadow-md transition">
+                                <img :src="product.image" :alt="product.name" class="w-14 h-14 object-cover rounded-md flex-shrink-0">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-gray-800 truncate" x-text="product.name"></div>
+                                    <div class="text-xs text-gray-400" x-text="product.category"></div>
+                                    <div class="text-sm font-semibold text-indigo-600" x-text="'Rs. ' + product.price"></div>
+                                </div>
+                            </a>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <div x-show="loading" class="text-left">
+                <div class="inline-block bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-gray-400 text-xs">Thinking...</div>
+            </div>
+        </div>
+        <!-- Input -->
+        <form @submit.prevent="sendMessage" class="p-3 border-t border-gray-100 bg-white">
+            <div class="flex items-center gap-2">
+                <input type="text" x-model="input" placeholder="Ask something..." :disabled="loading" class="flex-1 text-sm border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100">
+                <button type="submit" :disabled="loading || !input.trim()" class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-full p-2 transition">
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.94 2.94a1.5 1.5 0 011.66-.32l13 6a1.5 1.5 0 010 2.76l-13 6a1.5 1.5 0 01-2.08-1.72L3.7 10 2.52 4.66a1.5 1.5 0 01.42-1.72z" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+    <!-- Floating Toggle Button -->
+    <button @click="open = !open" class="relative w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-300/50 flex items-center justify-center transition-transform hover:scale-105">
+        <span class="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-ping" x-show="!open"></span>
+        <span x-show="!open" class="relative text-2xl">🤖</span>
+        <svg x-show="open" class="relative h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
+</div>
+
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function assistantWidget() {
+        return {
+            open: false,
+            input: '',
+            loading: false,
+            messages: [
+                { id: 0, role: 'assistant', text: 'Hi! 👋 How can I help you shop today?', products: [] }
+            ],
+            async sendMessage() {
+                const text = this.input.trim();
+                if (!text || this.loading) return;
+
+                this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
+                this.input = '';
+                this.loading = true;
+                this.scrollToBottom();
+
+                const historyForBackend = this.messages.map(msg => {
+                    if (msg.role === 'user') {
+                        return { role: 'user', content: msg.text };
+                    } else {
+                        return {
+                            role: 'assistant',
+                            content: JSON.stringify({ message: msg.text, products: msg.products })
+                        };
+                    }
+                });
+
+                try {
+                    const res = await fetch("{% url 'assistant_chat' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify({ messages: historyForBackend }),
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        this.messages.push({ id: Date.now() + 1, role: 'assistant', text: data.error || "Something went wrong.", products: [] });
+                    } else {
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            text: data.message,
+                            products: data.products || []
+                        });
+                    }
+                } catch (err) {
+                    this.messages.push({ id: Date.now() + 1, role: 'assistant', text: "Couldn't reach the assistant.", products: [] });
+                } finally {
+                    this.loading = false;
+                    this.scrollToBottom();
+                }
+            },
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const box = this.$refs.messageBox;
+                    if (box) box.scrollTop = box.scrollHeight;
+                });
+            }
+        }
+    }
+</script>
