@@ -1,6 +1,6 @@
 # accounts/urls.py
 from django.urls import path
-from django.contrib.auth import views as auth_views # <-- 1. Import Django's Auth Views
+from django.contrib.auth import views as auth_views
 from .views import (
     SellerDashboardView, SignUpView, DeliveryDashboardView, 
     update_rider_location, get_delivery_route, accept_delivery, reject_delivery
@@ -8,10 +8,12 @@ from .views import (
 
 app_name = 'accounts'
 
-# accounts/urls.py
-
 urlpatterns = [
     path('signup/', SignUpView.as_view(), name='signup'),
+    
+    # 🔑 CHANGED HERE: Pointing directly to the registration directory path
+    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    
     path('dashboard/seller/', SellerDashboardView.as_view(), name='seller_dashboard'),
     path('dashboard/delivery/', DeliveryDashboardView.as_view(), name='delivery_dashboard'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

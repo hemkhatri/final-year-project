@@ -8,8 +8,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}Marketplace Central{% endblock %}</title>
+    
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Montserrat as the default sans-serif font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- AlpineJS for Interactive Nav Menus -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -18,7 +37,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 
@@ -32,7 +51,7 @@
                 <div class="flex items-center space-x-8">
                     <div class="flex-shrink-0">
                         <a href="/" class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-2">
-                            <span>🛍️</span> Marketplace
+                            <img src="{% static 'media/logo1.png' %}" alt="Logo"> Yatra Mart
                         </a>
                     </div>
                     <!-- Desktop Links -->
@@ -43,8 +62,7 @@
                             class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
                         {% if user.is_authenticated and user.role == 'seller' %}
                         <a href="{% url 'seller_dashboard' %}"
-                            class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller
-                            Panel</a>
+                            class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
                         {% endif %}
                     </div>
                 </div>
@@ -70,8 +88,6 @@
                         </span>
                         {% endif %}
                     </a>
-                    <!-- Container with Alpine.js dropdown state management -->
-
 
                     <div class="relative inline-block text-left" x-data="{ open: false }">
                         <!-- Avatar Circle Trigger Button -->
@@ -122,18 +138,18 @@
                             <!-- Logout Button Option -->
                             <form action="{% url 'accounts:logout' %}" method="post">
                                 {% csrf_token %}
-                                <button type="submit" class="w-full text-left block text-sm font-medium text-red-600">
+                                <button type="submit" class="w-full text-left block text-sm font-medium text-red-600 px-4 py-2 hover:bg-gray-50 transition">
                                     Log Out
                                 </button>
                             </form>
                         </div>
                     </div>
                     {% else %}
-                    <a href="{% url 'login' %}"
+                    <a href="{% url 'accounts:login' %}"
                         class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
                         Log In
                     </a>
-                    <a href="{% url 'signup' %}"
+                    <a href="{% url 'accounts:signup' %}"
                         class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition shadow-indigo-100">
                         Sign Up
                     </a>
@@ -163,8 +179,7 @@
                     class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Categories</a>
                 {% if user.is_authenticated and user.role == 'seller' %}
                 <a href="{% url 'seller_dashboard' %}"
-                    class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">Seller
-                    Panel</a>
+                    class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">Seller Panel</a>
                 {% endif %}
             </div>
             <div class="pt-4 pb-3 border-t border-gray-200 px-4 bg-gray-50/50">
@@ -176,31 +191,28 @@
                 <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
                     <button type="submit" class="w-full text-left block text-sm font-medium text-red-600">
-                        Log
-                        Out
+                        Log Out
                     </button>
                 </form>
                 {% else %}
                 <div class="space-y-2">
-                    <a href="{% url 'login' %}"
-                        class="block text-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">Log
-                        In</a>
-                    <a href="{% url 'signup' %}"
-                        class="block text-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">Sign
-                        Up</a>
+                    <a href="{% url 'accounts:login' %}"
+                        class="block text-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">Log In</a>
+                    <a href="{% url 'accounts:signup' %}"
+                        class="block text-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">Sign Up</a>
                 </div>
                 {% endif %}
             </div>
         </div>
     </nav>
     <!-- Main Content Area Container -->
-    <!-- Use standard spacing unless overridden by child templates -->
     {% block main_wrapper %}
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {% block body_content %}
         {% endblock body_content %}
     </main>
     {% endblock main_wrapper %}
+    
     <!-- Global Footer -->
     <footer class="bg-white border-t border-gray-200 text-sm mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -219,12 +231,10 @@
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Selling</h3>
                     <ul class="space-y-2.5">
                         <li>
-                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Become a
-                                Seller</a>
+                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Become a Seller</a>
                         </li>
                         <li>
-                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Seller
-                                Guidelines</a>
+                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Seller Guidelines</a>
                         </li>
                         <li>
                             <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Store Fees</a>
@@ -250,12 +260,10 @@
                             <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Privacy Policy</a>
                         </li>
                         <li>
-                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Terms of
-                                Service</a>
+                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Terms of Service</a>
                         </li>
                         <li>
-                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Cookie
-                                Controls</a>
+                            <a href="#" class="text-gray-600 hover:text-indigo-600 transition-colors">Cookie Controls</a>
                         </li>
                     </ul>
                 </div>
@@ -285,7 +293,7 @@
             <div class="bg-indigo-600 px-4 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-white">
                     <span class="text-lg">🤖</span>
-                    <span class="font-semibold text-sm">Marketplace Assistant</span>
+                    <span class="font-semibold text-sm">Yatra Mart Assistant</span>
                 </div>
                 <button @click="open = false" class="text-white/80 hover:text-white">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,7 +304,6 @@
             </div>
             <!-- Messages -->
             <div x-ref="messageBox" class="p-4 h-72 overflow-y-auto text-sm bg-gray-50 space-y-3">
-                <!-- Add this inside the messages loop area, alongside your existing text bubbles -->
                 <template x-for="msg in messages" :key="msg.id">
                     <div :class="msg.role === 'user' ? 'text-right' : 'text-left'">
                         <!-- Text bubble -->
@@ -378,19 +385,15 @@
                     const text = this.input.trim();
                     if (!text || this.loading) return;
 
-                    // 1. Add user message to the UI array
                     this.messages.push({ id: Date.now(), role: 'user', text: text, products: [] });
                     this.input = '';
                     this.loading = true;
                     this.scrollToBottom();
 
-                    // 2. FORMAT THE HISTORY FOR THE BACKEND
-                    // We map through your messages and format them so the AI understands who said what
                     const historyForBackend = this.messages.map(msg => {
                         if (msg.role === 'user') {
                             return { role: 'user', content: msg.text };
                         } else {
-                            // Reconstruct the AI's JSON so it remembers exactly how it replied
                             return {
                                 role: 'assistant',
                                 content: JSON.stringify({ message: msg.text, products: msg.products })
@@ -405,7 +408,6 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRFToken': getCookie('csrftoken'),
                             },
-                            // 3. SEND THE FULL HISTORY INSTEAD OF ONE MESSAGE
                             body: JSON.stringify({ messages: historyForBackend }),
                         });
 
@@ -438,9 +440,6 @@
             }
         }
     </script>
-</body>
-
-</html>
 </body>
 
 </html>
