@@ -19,8 +19,6 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for product in products %}
         <a href="{% url 'shop:product_detail' product.slug %}" class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer">
-
-
             
             <div>
                 <!-- Cover Image Placement (Set to standard 4:3 landscape aspect ratio) -->
@@ -36,8 +34,15 @@
                 </div>
 
                 <!-- Descriptive Information Body -->
-                <div class="p-4 space-y-1">
+                <div class="p-4 pb-2 space-y-1">
                     <h3 class="font-bold text-gray-800 text-base truncate group-hover:text-indigo-600 transition-colors">{{ product.name }}</h3>
+                    
+                    <!-- NEW: Stars and Average Value Placement block -->
+                    <div class="flex items-center gap-1.5 pt-0.5">
+                        <span class="text-xs text-amber-500 font-bold">★</span>
+                        <span class="text-xs font-bold text-gray-800">{{ product.average_rating|default:"0.0"|floatformat:1 }}</span>
+                        <span class="text-xs text-gray-400">({{ product.total_reviews|default:0 }} reviews)</span>
+                    </div>
                 </div>
             </div>
 

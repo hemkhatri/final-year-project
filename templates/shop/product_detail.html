@@ -4,18 +4,17 @@
 {% block title %}{{ product.name }}{% endblock %}
 
 {% block body_content %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl mx-auto p-4 md:p-8 my-6">
+<!-- ================= MAIN CORE PRODUCT INFO SECTION ================= -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-5xl mx-auto p-4 md:p-8 my-6" x-data="{ quantity: 1, maxStock: {{ product.stock|default:0 }} }">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
 
         <!-- ================= LEFT MEDIA PANEL (7 COLS) ================= -->
         <div class="md:col-span-7 space-y-4">
-
             <div id="mainShowcaseWindow" class="bg-gray-50 rounded-xl overflow-hidden h-80 sm:h-96 md:h-[420px] border border-gray-100 relative shadow-inner group/theater">
-
                 <!-- Image slot -->
                 <img id="theaterImage" src="" class="w-full h-full object-cover hidden cursor-zoom-in">
 
-                <!-- Video slot: IFrame API mounts into #ytPlayerMount. Never touch this div's innerHTML directly. -->
+                <!-- Video slot -->
                 <div id="ytPlayerWrap" class="w-full h-full hidden relative">
                     <div id="ytPlayerMount" class="w-full h-full"></div>
                     <div id="videoFallback" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white text-sm gap-2 p-4 text-center">
@@ -25,12 +24,10 @@
                 </div>
 
                 {% if product.media.all|length > 1 %}
-                <button type="button" id="prevMediaBtn" aria-label="Previous"
-                    class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
+                <button type="button" id="prevMediaBtn" aria-label="Previous" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
                     <span class="text-xl leading-none">&lsaquo;</span>
                 </button>
-                <button type="button" id="nextMediaBtn" aria-label="Next"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
+                <button type="button" id="nextMediaBtn" aria-label="Next" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition opacity-0 group-hover/theater:opacity-100 z-10">
                     <span class="text-xl leading-none">&rsaquo;</span>
                 </button>
                 {% endif %}
@@ -42,11 +39,7 @@
                     <button type="button"
                             class="media-thumb-node relative flex-none w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 {% if forloop.first %}border-indigo-600{% else %}border-gray-200{% endif %} hover:border-indigo-400 transition bg-white"
                             data-type="{{ asset.media_type }}"
-                            {% if asset.media_type == 'VIDEO' %}
-                                data-video-id="{{ asset.url|youtube_id }}"
-                            {% else %}
-                                data-image-url="{{ asset.url }}"
-                            {% endif %}>
+                            {% if asset.media_type == 'VIDEO' %} data-video-id="{{ asset.url|youtube_id }}" {% else %} data-image-url="{{ asset.url }}" {% endif %}>
 
                         {% if asset.media_type == 'VIDEO' %}
                             <img src="https://img.youtube.com/vi/{{ asset.url|youtube_id }}/mqdefault.jpg" class="w-full h-full object-cover brightness-90">
@@ -58,10 +51,9 @@
                 {% endfor %}
             </div>
             {% endif %}
-
         </div>
 
-        <!-- ================= RIGHT STRUCTURAL DATA PANEL (5 COLS) ================= -->
+        <!-- ================= RIGHT DATA & INTERACTION PANEL (5 COLS) ================= -->
         <div class="md:col-span-5 flex flex-col justify-between space-y-6">
             <div class="space-y-4">
                 <div>
@@ -70,49 +62,240 @@
                     </span>
                 </div>
 
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{{ product.name }}</h1>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3 flex-wrap">
+    <!-- Product Name -->
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">
+        {{ product.name }}
+    </h1>
 
-                <p class="text-xs sm:text-sm text-gray-400">
-                    Sold by: <span class="font-bold text-gray-700 hover:text-indigo-600 transition cursor-pointer">{{ product.seller.seller_profile.store_name|default:product.seller.username }}</span>
-                </p>
+    <!-- Ratings & Buyer Count Row -->
+    <div class="flex items-center gap-2 mt-1 sm:mt-0">
+        <!-- Star Layout (Ensures identical scaling for all states) -->
+        <div class="flex items-center text-amber-400 gap-0.5">
+            <!-- Full Star -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <!-- Full Star -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <!-- Full Star -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <!-- Full Star -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <!-- Half Star (Same size wrapper, partial gradient fill or half star path) -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4V6.1l1.71 4.04 4.38.38-3.32 2.88.99 4.28L12 15.4z"/></svg>
+        </div>
+        
+        <!-- Numerical Rating Value -->
+        <span class="text-sm font-black text-gray-800">4.7</span>
+        
+        <span class="text-gray-300">|</span>
+        
+        <!-- Total Buyers Number Count -->
+        <span class="text-xs font-semibold text-gray-500 hover:text-indigo-600 transition ">
+            1.2k+ Orders
+        </span>
+    </div>
+</div>
+
+<!-- Seller Profile Info Block Line -->
+<p class="text-xs sm:text-sm text-gray-400 mt-1.5">
+    Sold by: <span class="font-bold text-gray-700 hover:text-indigo-600 transition cursor-pointer">{{ product.seller.seller_profile.store_name|default:product.seller.username }}</span>
+</p>
 
                 <div class="text-3xl font-black text-gray-900 pt-1">Rs. {{ product.price }}</div>
 
-                <hr class="border-gray-100">
-
-                <div class="space-y-1">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Product Details</h3>
-                    <p class="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{{ product.description }}</p>
-                </div>
-            </div>
-
-            <div class="space-y-3 pt-4 border-t border-gray-50">
                 <div class="flex items-center gap-1.5 text-xs font-bold {% if product.stock > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
                     <span class="inline-block w-2 h-2 rounded-full {% if product.stock > 0 %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
                     {% if product.stock > 0 %}{{ product.stock }} items available in stock{% else %}Out of stock{% endif %}
                 </div>
+            </div>
 
-                {% if user.is_authenticated and user.role == "CUSTOMER" %}
-                <button {% if product.stock == 0 %}disabled{% endif %} class="w-full bg-indigo-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-xs hover:bg-indigo-500 transition-all transform active:scale-[0.99]">
-                    Add to Shopping Cart
-                </button>
-                {% elif not user.is_authenticated %}
-                <a href="{% url 'login' %}" class="block text-center w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-colors shadow-xs">
-                    Sign in to Purchase
-                </a>
+            <!-- Quantity Selector & CTA Buttons Block -->
+            <div class="space-y-4 pt-4 border-t border-gray-100">
+                {% if product.stock > 0 %}
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-semibold text-gray-700">Quantity:</span>
+                        <div class="flex items-center border border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
+                            <button type="button" @click="if(quantity > 1) quantity--" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold transition-colors">-</button>
+                            <span class="px-4 py-1.5 text-sm font-bold text-gray-800 w-12 text-center bg-white border-x border-gray-300" x-text="quantity"></span>
+                            <button type="button" @click="if(quantity < maxStock) quantity++" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold transition-colors">+</button>
+                        </div>
+                    </div>
                 {% endif %}
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    {% if user.is_authenticated and user.role == "CUSTOMER" %}
+                        <button {% if product.stock == 0 %}disabled{% endif %} class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed font-bold py-3.5 rounded-xl shadow-xs hover:bg-indigo-50 transition-all transform active:scale-[0.99]">
+                            Add to Shopping Cart
+                        </button>
+                        <button {% if product.stock == 0 %}disabled{% endif %} class="flex-1 bg-indigo-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-xs hover:bg-indigo-500 transition-all transform active:scale-[0.99]">
+                            Buy Now
+                        </button>
+                    {% elif not user.is_authenticated %}
+                        <a href="{% url 'accounts:login' %}" class="block text-center w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-colors shadow-xs">
+                            Sign in to Purchase
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- Fullscreen Lightbox (images only) -->
+<!-- ================= LOWER CONTENT TABS PANEL: DESCRIPTION (MD SUPPORTED) ================= -->
+<div class="max-w-5xl mx-auto my-6 grid grid-cols-1 gap-6">
+    
+    <!-- Description Block (Markdown Ready with Clamp Limit Panel) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="{ expanded: false }">
+        <h3 class="text-lg font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100">Product Details & Specifications</h3>
+        
+        <div class="relative overflow-hidden transition-all duration-300" :class="expanded ? 'max-h-full' : 'max-h-48'">
+            <!-- Prosed text block structure supports MD elements nicely via tailwind prose styles -->
+            <div class="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-line">
+                {{ product.description }}
+            </div>
+            
+            <!-- White fade layer when collapsed -->
+            <div x-show="!expanded" class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <button type="button" @click="expanded = !expanded" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 focus:outline-none transition" x-text="expanded ? 'Read Less ▲' : 'Read More ▼'"></button>
+        </div>
+    </div>
+
+    <!-- ================= CUSTOMER REVIEWS TABS SYSTEM (FILTERABLE WITH GRAPH DUMMY DATA) ================= -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" 
+         x-data="{ 
+    activeFilter: 'all', 
+    selectedStar: 'all',
+    lightboxOpen: false, 
+    lightboxSrc: '',
+    reviews: [
+        { id: 1, user: 'Arjun K.', rating: 5, date: '2026-05-12', comment: 'Absolutely stunning quality! Exceeded my initial expectations. Recommended product.', hasImage: true, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500', likes: 14, liked: false },
+        { id: 2, user: 'Sita R.', rating: 4, date: '2026-06-02', comment: 'Good value for the price, build frame feels strong. Fast shipping too.', hasImage: false, image: '', likes: 5, liked: false },
+        { id: 3, user: 'Rohan M.', rating: 5, date: '2026-06-25', comment: 'Very practical and exact details specified. Look at this clean frame setup!', hasImage: true, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500', likes: 22, liked: false },
+        { id: 4, user: 'Pooja T.', rating: 3, date: '2026-07-01', comment: 'Average execution but functional enough. Packing was slightly torn.', hasImage: false, image: '', likes: 2, liked: false }
+    ],
+    filteredReviews() {
+        if (this.activeFilter === 'all') {
+            return this.reviews;
+        }
+        if (this.activeFilter === 'images') {
+            return this.reviews.filter(r => r.hasImage);
+        }
+        if (this.activeFilter === 'star_specific') {
+            // If specific star is 'all', show reviews that have images as requested
+            if (this.selectedStar === 'all') {
+                return this.reviews.filter(r => r.hasImage);
+            }
+            // Otherwise, filter strictly by the selected numeric star rating string value
+            return this.reviews.filter(r => r.rating === parseInt(this.selectedStar));
+        }
+        return this.reviews;
+    },
+    openReviewImage(src) {
+        this.lightboxSrc = src;
+        this.lightboxOpen = true;
+    }
+}">
+        
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Customer Reviews</h3>
+
+        <!-- Review Metadata Aggregations layout -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-gray-100 pb-6 mb-6">
+            <div class="md:col-span-4 text-center md:text-left">
+                <div class="text-4xl font-black text-gray-900">4.3 <span class="text-sm font-medium text-gray-400">/ 5</span></div>
+                <div class="flex items-center justify-center md:justify-start text-amber-400 gap-0.5 my-1">★★★★☆</div>
+                <div class="text-xs text-gray-400">Based on 4 Verified Purchases</div>
+            </div>
+            
+            <!-- Interactive Filter Chips block -->
+            <div class="md:col-span-8 flex flex-wrap items-center gap-3" 
+     x-init="$watch('activeFilter', value => { 
+        if (value !== 'star_specific') { selectedStar = 'all'; } 
+     })">
+    
+    <!-- Primary Filter Dropdown -->
+    <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Filter Type</label>
+        <select x-model="activeFilter" 
+                class="bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
+            <option value="all">All Reviews</option>
+            <option value="images">With Images Only 📸</option>
+            <option value="star_specific">Specific Stars ★</option>
+        </select>
+    </div>
+
+    <!-- Secondary Dropdown: Conditioned to show only when 'Specific Stars' is active -->
+    <div class="flex flex-col gap-1 transition-all duration-200" 
+         x-show="activeFilter === 'star_specific'" 
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 transform -translate-x-2"
+         x-transition:enter-end="opacity-100 transform translate-x-0"
+         style="display: none;">
+        
+        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Select Rating</label>
+        <select x-model="selectedStar" 
+                class="bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
+            <option value="all">All Stars (With Images)</option>
+            <option value="5">5 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="2">2 Stars</option>
+            <option value="1">1 Star</option>
+        </select>
+    </div>
+</div>
+        </div>
+
+        <!-- Dynamic Loop Render Block for Filtered Cards -->
+        <div class="space-y-4 divide-y divide-gray-100">
+            <template x-for="review in filteredReviews()" :key="review.id">
+                <div class="pt-4 first:pt-0 block">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-sm font-bold text-gray-800" x-text="review.user"></span>
+                            <div class="flex text-amber-400 text-xs mt-0.5">
+                                <template x-for="i in review.rating"><span>★</span></template>
+                                <template x-for="i in (5 - review.rating)"><span>☆</span></template>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-400" x-text="review.date"></span>
+                    </div>
+                    
+                    <p class="text-sm text-gray-600 mt-2 leading-relaxed" x-text="review.comment"></p>
+
+                    <!-- Embedded thumbnail render option inside review block layout -->
+                    <template x-if="review.hasImage">
+                        <div class="mt-3">
+                            <img :src="review.image" @click="openReviewImage(review.image)" class="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-zoom-in hover:opacity-90 transition shadow-xs">
+                        </div>
+                    </template>
+
+                    <!-- Utility Like interaction row panel -->
+                    <div class="flex items-center gap-4 mt-3">
+                        <button type="button" @click="if(!review.liked){ review.likes++; review.liked=true; } else { review.likes--; review.liked=false; }" 
+                                class="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md border transition"
+                                :class="review.liked ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'">
+                            <span x-text="review.liked ? '👍 Liked' : '👍 Helpful'"></span>
+                            (<span x-text="review.likes"></span>)
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Overlapping Review Image Lightbox Component Modals container -->
+        <div x-show="lightboxOpen" class="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" style="display: none;" @keydown.escape.window="lightboxOpen = false">
+            <button type="button" @click="lightboxOpen = false" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xl transition">✕</button>
+            <img :src="lightboxSrc" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+        </div>
+    </div>
+</div>
+
+<!-- Main Banner Showcase Image Lightbox (Product Media Window) -->
 <div id="imageLightbox" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4">
-    <button type="button" id="closeLightboxBtn" aria-label="Close"
-        class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xl transition">
-        ✕
-    </button>
+    <button type="button" id="closeLightboxBtn" aria-label="Close" class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xl transition">✕</button>
     <img id="lightboxImage" src="" class="max-w-full max-h-full object-contain rounded-lg">
 </div>
 
@@ -133,16 +316,15 @@ document.addEventListener("DOMContentLoaded", function() {
     const mediaList = thumbNodes.map(btn => ({
         type: btn.getAttribute('data-type'),
         url: btn.getAttribute('data-type') === 'VIDEO'
-            ? btn.getAttribute('data-video-id')   // bare 11-char ID now, not a full embed url
+            ? btn.getAttribute('data-video-id')
             : btn.getAttribute('data-image-url')
     }));
 
     let currentIndex = 0;
     let ytPlayer = null;
     let ytApiReady = false;
-    let pendingVideoId = null; // if user navigates before API script finishes loading
+    let pendingVideoId = null;
 
-    // --- YouTube IFrame API bootstrap ---
     window.onYouTubeIframeAPIReady = function() {
         ytApiReady = true;
         if (pendingVideoId) {
@@ -198,7 +380,7 @@ document.addEventListener("DOMContentLoaded", function() {
             playVideo(item.url);
         } else {
             ytPlayerWrap.classList.add('hidden');
-            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); // kill trailing audio
+            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
             theaterImg.src = item.url;
             theaterImg.classList.remove('hidden');
         }
@@ -212,7 +394,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (nextBtn) nextBtn.addEventListener('click', () => showMediaAt(currentIndex + 1));
 
     function openLightbox() {
-        if (theaterImg.classList.contains('hidden')) return; // only for the image slot
+        if (theaterImg.classList.contains('hidden')) return;
         lightboxImg.src = theaterImg.src;
         lightbox.classList.remove('hidden');
         lightbox.classList.add('flex');
@@ -229,7 +411,6 @@ document.addEventListener("DOMContentLoaded", function() {
     lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
-    // Initial render
     if (mediaList.length > 0) {
         showMediaAt(0);
     }
