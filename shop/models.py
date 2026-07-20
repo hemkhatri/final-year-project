@@ -100,3 +100,40 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=Order.STATUS_CHOICES, default='PENDING')
+
+
+
+class SellerApplication(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Verification'),
+        ('ACTIVE', 'Approved/Active'),
+        ('SUSPENDED', 'Suspended'),
+    ]
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='seller_application')
+    store_name = models.CharField(max_length=100, unique=True)
+    
+    # 1. Legal Proof
+    id_document = models.FileField(upload_to='seller_docs/ids/')
+    business_license = models.FileField(upload_to='seller_docs/licenses/')
+    tax_number = models.CharField(max_length=50, help_text="PAN or VAT number")
+    
+    # 2. Financial Routing
+    bank_name = models.CharField(max_length=100)
+    routing_number = models.CharField(max_length=50)
+    account_number = models.CharField(max_length=50)
+    beneficiary_name = models.CharField(max_length=100)
+    bank_statement = models.FileField(upload_to='seller_docs/financials/')
+    
+    # 3. Operational Metrics
+    warehouse_address = models.TextField(help_text="Physical pickup location for delivery couriers")
+    support_email = models.EmailField()
+    support_phone = models.CharField(max_length=20)
+    product_categories = models.TextField(help_text="Comma-separated list of intended categories")
+    
+    # Technical Architecture Flags
+    kyc_status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.store_name} ({self.get_kyc_status_display()})"

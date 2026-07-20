@@ -28,7 +28,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')), 
     path('accounts/', include('django.contrib.auth.urls')), # Provides global 'login' fallback
     
-    path('shop/', include('shop.urls')), 
+    path('shop/', include(('shop.urls', 'shop'), namespace='shop')),
     path("assistant/", include("assistant.urls")),
     path('cart/', include('cart.urls')),
     path('payment/', include('payment.urls')), 

@@ -14,9 +14,9 @@
                 <!-- Desktop Links -->
                 <div class="hidden md:flex items-center space-x-1">
                     <a href="#" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Explore</a>
-                    <a href="{% url 'category_list' %}" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
+                    <a href="{% url 'shop:category_list' %}" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
                     {% if user.is_authenticated and user.role == 'seller' %}
-                    <a href="{% url 'seller_dashboard' %}" class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
+                    <a href="{% url 'shop:seller_dashboard' %}" class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
                     {% endif %}
                 </div>
             </div>

@@ -18,7 +18,7 @@
     {% if products %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for product in products %}
-        <a href="{% url 'product_detail' product.slug %}" class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer">
+        <a href="{% url 'shop:product_detail' product.slug %}" class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer">
 
 
             

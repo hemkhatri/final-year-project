@@ -1,0 +1,138 @@
+<!-- templates/shop/become_seller.html -->
+{% extends 'base.html' %}
+{% block title %}Become a Seller{% endblock title %}
+
+{% block body_content %}
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto bg-white shadow sm:rounded-lg border border-gray-100 p-8">
+        
+        <div class="border-b border-gray-200 pb-5 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Seller Registration Dashboard</h2>
+            <div class="mt-2 flex items-center justify-between flex-wrap gap-2 text-sm text-gray-500">
+                <p>Complete verification parameters to activate automated escrow split routing features.</p>
+                <p class="text-xs text-gray-500 font-medium"><span class="text-red-500 font-bold">*</span> fields are mandatory</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" action="{% url 'shop:become_seller' %}" class="space-y-8">
+            {% csrf_token %}
+
+            <!-- Core Identity -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Proposed Store Name <span class="text-red-500 font-bold">*</span></label>
+                    {{ become_seller.store_name }}
+                    {{ become_seller.store_name.errors }}
+                </div>
+            </div>
+
+            <!-- 1. Collect Legal Proof -->
+            <div class="pt-4 border-t border-gray-100">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">1. Legal Identity Documentation</h3>
+                <div class="grid grid-cols-1 gap-y-4 gap-x-6 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID / Passport Scan (OCR Validated) <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.id_document }}
+                        {{ become_seller.id_document.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Business License Certificate <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.business_license }}
+                        {{ become_seller.business_license.errors }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Regional Tax ID (PAN / VAT) <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.tax_number }}
+                        {{ become_seller.tax_number.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Verify Financial Routing -->
+            <div class="pt-4 border-t border-gray-100">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">2. Financial Routing Config</h3>
+                <div class="grid grid-cols-1 gap-y-4 gap-x-6 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Bank Name <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.bank_name }}
+                        {{ become_seller.bank_name.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Routing Number / Branch Code <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.routing_number }}
+                        {{ become_seller.routing_number.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Account Number <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.account_number }}
+                        {{ become_seller.account_number.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Beneficiary Registration Name <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.beneficiary_name }}
+                        {{ become_seller.beneficiary_name.errors }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Verification Statement / Cancelled Check <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.bank_statement }}
+                        {{ become_seller.bank_statement.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Establish Operational Metrics -->
+            <div class="pt-4 border-t border-gray-100">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">3. Operational Logistics Metrics</h3>
+                <div class="grid grid-cols-1 gap-y-4 gap-x-6 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Courier Pickup Warehouse Physical Address <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.warehouse_address }}
+                        {{ become_seller.warehouse_address.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Support Email Address <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.support_email }}
+                        {{ become_seller.support_email.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Support Phone Number <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.support_phone }}
+                        {{ become_seller.support_phone.errors }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Target Inventory Categories (Comma separated) <span class="text-red-500 font-bold">*</span></label>
+                        {{ become_seller.product_categories }}
+                        {{ become_seller.product_categories.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Legal Declaration Checkbox -->
+            <div class="pt-6 border-t border-gray-200">
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input id="legal_declaration" name="legal_declaration" type="checkbox" required
+                            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer">
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="legal_declaration" class="font-medium text-gray-900 cursor-pointer">
+                            Legal Declaration & Agreement <span class="text-red-500 font-bold">*</span>
+                        </label>
+                        <p class="text-gray-500 mt-1 leading-relaxed">
+                            I hereby declare that all the information, credentials, and documentation provided in this form are authentic, accurate, and true. I explicitly acknowledge that if any fraudulent or false information is detected, I am fully prepared to face absolute legal actions and immediate termination of my seller access.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Action Hook -->
+            <div class="pt-4">
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    Deploy Application Data to KYC Stack
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock body_content %}

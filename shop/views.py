@@ -14,7 +14,11 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import Order, OrderItem, Product
 from payment.models import OrderItem as PaymentOrderItem
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .become_seller import BecomeSellerForm
+
 
 
 # shop/views.py
@@ -287,3 +291,41 @@ def category_list_view(request):
     categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories')
     
     return render(request, 'shop/category.html', {'categories': categories})
+
+
+
+def become_seller_landing(request):
+    """
+    Renders an introductory space showing marketplace benefits 
+    and legal tracking parameters before launching the form entry.
+    """
+    return render(request, 'shop/become_seller_landing.html')
+
+def privacy_policy(request):
+    """
+    render the privacy policies page
+    """
+    return render(request, 'shop/privacy_policy.html')
+
+@login_required
+def become_seller_view(request):
+    if request.method == 'POST':
+        form = BecomeSellerForm(request.POST, request.FILES)
+        if form.is_valid():
+            application = form.save(commit=False)
+            application.user = request.user
+            application.save()
+            return redirect('shop:market_home')
+    else:
+        form = BecomeSellerForm()
+        
+    # 🔑 The key must be 'become_seller' to match your HTML variables!
+    return render(request, 'shop/become_seller.html', {'become_seller': form})
+    
+
+
+def careers_landing(request):
+    """
+    Renders the centralized operations recruitment landing board.
+    """
+    return render(request, 'shop/careers.html')
