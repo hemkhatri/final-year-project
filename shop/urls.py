@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     ProductListView, ProductDetailView, ProductCreateView, 
     ProductUpdateAjaxView, ProductDeleteView, ProductCreateAjaxView, 
-    SellerOrdersJsonView, category_list_view, become_seller_view, become_seller_landing, privacy_policy, careers_landing
+    SellerOrdersJsonView, category_list_view, become_seller_view, become_seller_landing, privacy_policy, careers_landing, product_search_view, autocomplete_search_view
 )
 
 app_name = 'shop'
@@ -15,6 +15,8 @@ urlpatterns = [
     path('become-seller/apply/', become_seller_view, name='become_seller'),
     path('privacy-policy', privacy_policy, name='privacy-policy'),
     path('careers/', careers_landing, name='careers_landing'),
+    path('search/', product_search_view, name='product_search'),
+    path('api/autocomplete/', autocomplete_search_view, name='api_autocomplete'),
     
     path('<slug:slug>/', ProductDetailView.as_view(), name='product_detail'),
     path('products/create/', ProductCreateView.as_view(), name='product_create'), 

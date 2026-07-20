@@ -1,5 +1,5 @@
 # shop/views.py
-import json, os
+import json
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth import authenticate
@@ -9,13 +9,13 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView, CreateView
 from django.urls import reverse_lazy
 from django.utils.text import slugify
-from shop.models import Product, Category, ProductMedia
+from shop.models import Product, Category, ProductMedia, SearchTag
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import Order, OrderItem, Product
 from payment.models import OrderItem as PaymentOrderItem
 from django.shortcuts import render, redirect
-from django.contrib import messages
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from .become_seller import BecomeSellerForm
 
@@ -285,10 +285,6 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
         response['Expires'] = '0'
         return response
 
-# shop/views.py
-from django.shortcuts import render
-from .models import Category
-
 def category_list_view(request):
     # Fetch ONLY top-level categories (categories without a parent)
     # select_related avoids hitting the DB repeatedly when loading subcategories
@@ -333,3 +329,54 @@ def careers_landing(request):
     Renders the centralized operations recruitment landing board.
     """
     return render(request, 'shop/careers.html')
+
+
+def product_search_view(request):
+    query = request.GET.get('q', '').strip()
+    results = Product.objects.none()
+
+    if query:
+        keywords = query.split()
+        
+        # Adding prefetch_related('media') optimizes the background image execution 
+        results = Product.objects.filter(available=True).prefetch_related('media')
+        
+        for word in keywords:
+            results = results.filter(
+                Q(name__icontains=word) | Q(description__icontains=word)
+            )
+            
+        results = results.distinct()
+
+    context = {
+        'query': query,
+        'products': results,
+        'count': results.count()
+    }
+    return render(request, 'shop/search_results.html', context)
+
+
+
+def autocomplete_search_view(request):
+    query = request.GET.get('term', '').strip()
+    data = []
+
+    # Fire only if the user types 2 or more characters
+    if len(query) >= 2:
+        # SQLite-friendly approach using icontains or complex Q filters
+        # __icontains mimics the behavior of autocomplete perfectly for small/mid datasets
+        results = Product.objects.filter(
+            Q(name__icontains=query),
+            available=True
+        ).prefetch_related('media')[:6]
+
+        for product in results:
+            data.append({
+                'name': product.name,
+                'slug': product.slug,
+                'price': str(product.price),
+                # Fallback to standard placeholder if cover_image is empty
+                'image': product.cover_image if product.cover_image else 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150'
+            })
+
+    return JsonResponse(data, safe=False)

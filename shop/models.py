@@ -42,6 +42,26 @@ class Product(models.Model):
     available = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
+    # ===== NEW: Analytics & Performance Metrics =====
+    total_views = models.PositiveIntegerField(default=0, help_text="Total product detail page views")
+    total_search_appears = models.PositiveIntegerField(default=0, help_text="How many times this product appeared in search results")
+    total_bought = models.PositiveIntegerField(default=0, help_text="Total lifetime sales count")
+
+    # ===== NEW: Reviews Summary Metrics =====
+    # Storing these directly on the product prevents heavy aggregate database hits on listing pages
+    total_reviews = models.PositiveIntegerField(default=0, help_text="Total number of reviews submitted")
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00, help_text="Average review rating out of 5.00")
+
+    # ===== NEW: Tagging System =====
+    # 1. Structured linking to your existing SearchTag model
+    tags = models.ManyToManyField('SearchTag', blank=True, related_name='products')
+    
+    # 2. Simple flat storage for comma-separated ad-hoc keyword entries
+    relevant_tags = models.TextField(
+        blank=True, 
+        help_text="Comma-separated plain text keywords for search indexing (e.g., 'summer, light, cotton')"
+    )
+
     @property
     def cover_image(self):
         first_image = self.media.filter(media_type='IMAGE').first()
@@ -49,7 +69,25 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+    
 
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(help_text="Rating from 1 to 5")
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        # Prevents a single user from spamming multiple reviews on one product
+        unique_together = ('product', 'user') 
+
+    def __str__(self):
+        return f"{self.rating}★ by {self.user.username} on {self.product.name}"
+    
+
+    
 class ProductMedia(models.Model):
     MEDIA_TYPES = (
         ('IMAGE', 'Image'),
@@ -137,3 +175,15 @@ class SellerApplication(models.Model):
 
     def __str__(self):
         return f"{self.store_name} ({self.get_kyc_status_display()})"
+    
+
+class SearchTag(models.Model):
+    keyword = models.CharField(max_length=100, unique=True, help_text="e.g., 'pants for men', 'freeze 200l'")
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    search_count = models.PositiveIntegerField(default=0, help_text="Track popularity")
+
+    class Meta:
+        ordering = ['-search_count', 'keyword']
+
+    def __str__(self):
+        return self.keyword

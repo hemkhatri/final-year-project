@@ -65,5 +65,58 @@
         {% include 'includes/ai_assistant.html' %}
     {% endif %}
 </body>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('ajax-search-input');
+    const resultsBox = document.getElementById('search-results-box');
 
+    if (!searchInput) return; // Guard clause in case the search bar is omitted for roles
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+
+        if (query.length < 1) {
+            resultsBox.innerHTML = '';
+            resultsBox.classList.add('hidden');
+            return;
+        }
+
+        // Fetch matching items dynamically from your new endpoint
+        fetch(`/api/live-search/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                resultsBox.innerHTML = '';
+                
+                if (data.results.length > 0) {
+                    data.results.forEach(product => {
+                        const item = document.createElement('a');
+                        item.href = product.url;
+                        item.className = "flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition border-b border-gray-100 last:border-none group text-decoration-none";
+                        
+                        item.innerHTML = `
+                            <img src="${product.image_url}" alt="${product.name}" class="w-10 h-10 rounded object-cover border border-gray-100 shrink-0">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-600 m-0">${product.name}</p>
+                                <p class="text-xs font-bold text-emerald-600 m-0">Rs. ${product.price}</p>
+                            </div>
+                        `;
+                        resultsBox.appendChild(item);
+                    });
+                    resultsBox.classList.remove('hidden');
+                } else {
+                    resultsBox.innerHTML = `<div class="px-4 py-3 text-xs text-gray-500 italic">No products found matching "${query}"</div>`;
+                    resultsBox.classList.remove('hidden');
+                }
+            })
+            .catch(err => console.error('Error fetching search results:', err));
+    });
+
+    // Close the live lookup results panel if clicking outside the elements
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+            resultsBox.classList.add('hidden');
+        }
+    });
+});
+</script>
 </html>
