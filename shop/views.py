@@ -237,19 +237,24 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
     def get(self, request):
         order_items = PaymentOrderItem.objects.filter(
             product__seller=request.user
-        ).select_related('order', 'order__user', 'product').order_by('-order_id')
-
+        ).select_related('order', 'order__buyer', 'product').order_by('-order_id')
+        
         data = {'new': [], 'processing': [], 'shipped': [], 'returns': []}
 
         for item in order_items:
-            current_status = (item.fulfillment_status or 'NEW').strip().upper()
+            current_status = (item.order.status or 'NEW').strip().upper()
             item_total = float(item.price * item.quantity)
 
             o_id = item.order.id if item.order else "0"
             o_date = item.order.created_at.strftime('%B %d, %Y') if (item.order and item.order.created_at) else "N/A"
+            
+            # Fix customer resolution check from .user to .buyer
             buyer = "Guest Buyer"
-            if item.order and item.order.user:
-                buyer = item.order.user.get_full_name() or item.order.user.username
+            if item.order and item.order.buyer:
+                buyer = item.order.buyer.get_full_name() or item.order.buyer.username
+
+            # Fetch address directly from the verified field string
+            shipping_addr = item.order.shipping_address if item.order else "N/A"
 
             serialized_item = {
                 'id': item.id,
@@ -259,7 +264,7 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
                 'product_name': item.product.name if item.product else "Unknown Product",
                 'quantity': item.quantity,
                 'buyer_name': buyer,
-                'address': "N/A",
+                'address': shipping_addr,
                 'status': current_status.lower()
             }
 
@@ -279,7 +284,6 @@ class SellerOrdersJsonView(LoginRequiredMixin, View):
         response['Pragma'] = 'no-cache'
         response['Expires'] = '0'
         return response
-    
 
 # shop/views.py
 from django.shortcuts import render
