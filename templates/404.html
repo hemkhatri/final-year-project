@@ -1,0 +1,27 @@
+<!-- templates/404.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body_content %}
+<div class="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+    <h1 class="text-9xl font-black text-indigo-600 tracking-widest animate-bounce">404</h1>
+    
+    <div class="bg-indigo-600 text-white px-2 text-sm rounded rotate-12 absolute mb-24">
+        Page Not Found
+    </div>
+    
+    <h2 class="text-3xl font-bold text-gray-800 mt-4">Lost in Transit?</h2>
+    <p class="text-gray-500 mt-2 max-w-md">
+        The page you are looking for doesn't exist, or has been moved to another URL.
+    </p>
+    
+    <div class="mt-6 flex gap-4">
+        <a href="/" class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-md hover:bg-indigo-700 transition">
+            Go Home
+        </a>
+        <button onclick="history.back()" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+            Go Back
+        </button>
+    </div>
+</div>
+{% endblock %}

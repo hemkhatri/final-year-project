@@ -1,6 +1,6 @@
 <!-- templates/includes/header.html -->
 {% load static %}
-<nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-xs">
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-xs" x-data="{ mobileMenuOpen: false }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <!-- Left: Logo & Core Navigation Links -->
@@ -13,91 +13,84 @@
 
                 <!-- Desktop Links -->
                 <div class="hidden md:flex items-center space-x-1">
-                    <a href="#"
-                        class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Explore</a>
-                    <a href="{% url 'shop:category_list' %}"
-                        class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
+                    <a href="#" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Explore</a>
+                    <a href="{% url 'shop:category_list' %}" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-md transition-colors">Categories</a>
                     {% if user.is_authenticated and user.role == 'SELLER' %}
-                    <a href="{% url 'accounts:seller_dashboard' %}"
-                        class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
+                    <a href="{% url 'accounts:seller_dashboard' %}" class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md">Seller Panel</a>
                     {% endif %}
                 </div>
 
-{% if not user.is_authenticated or user.role != 'SELLER' and user.role != 'DELIVERY_BOY' %}
-<div class="hidden md:block flex-1 max-w-md mx-4 relative" 
-     x-data="{ term: '{{ request.GET.q|default:'' }}', suggestions: [], showDropdown: false }"
-     @click.outside="showDropdown = false">
-    
-    <form action="{% url 'shop:product_search' %}" method="GET" x-ref="searchForm">
-        <div class="relative">
-            <input type="text" 
-                   name="q" 
-                   x-model="term"
-                   placeholder="Search products..." 
-                   @input.debounce.150ms="
-                        if (term.trim().length < 2) { suggestions = []; showDropdown = false; return; }
-                        fetch('/shop/api/autocomplete/?term=' + encodeURIComponent(term.trim()))
-                            .then(res => res.json())
-                            .then(data => { suggestions = data; showDropdown = suggestions.length > 0; })
-                   "
-                   @focus="if (suggestions.length > 0) showDropdown = true"
-                   class="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </div>
-        </div>
-    </form>
+                <!-- Search bar visible only to Customers & Guests -->
+                {% if not user.is_authenticated or user.role != 'SELLER' and user.role != 'DELIVERY_BOY' %}
+                <div class="hidden md:block flex-1 max-w-md mx-4 relative" 
+                     x-data="{ term: '{{ request.GET.q|default:'' }}', suggestions: [], showDropdown: false }"
+                     @click.outside="showDropdown = false">
+                    
+                    <form action="{% url 'shop:product_search' %}" method="GET" x-ref="searchForm">
+                        <div class="relative">
+                            <input type="text" 
+                                   name="q" 
+                                   x-model="term"
+                                   placeholder="Search products..." 
+                                   @input.debounce.150ms="
+                                        if (term.trim().length < 2) { suggestions = []; showDropdown = false; return; }
+                                        fetch('/shop/api/autocomplete/?term=' + encodeURIComponent(term.trim()))
+                                            .then(res => res.json())
+                                            .then(data => { suggestions = data; showDropdown = suggestions.length > 0; })
+                                   "
+                                   @focus="if (suggestions.length > 0) showDropdown = true"
+                                   class="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </form>
 
-    <!-- Dropdown Panel Layout -->
-    <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden"
-         x-show="showDropdown" 
-         style="display: none;">
-        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50">
-            <template x-for="item in suggestions">
-                <a :href="'/shop/' + item.slug + '/'" 
-                   class="flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50/50 transition-colors group cursor-pointer text-decoration-none block">
-                    
-                    <!-- ImgBB product thumbnail -->
-                    <img :src="item.image" 
-                         :alt="item.name" 
-                         class="w-10 h-10 object-cover rounded-md bg-gray-50 border border-gray-100 flex-shrink-0">
-                    
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-600 transition-colors m-0" x-text="item.name"></p>
-                        <p class="text-xs font-black text-gray-500 mt-0.5 m-0" x-text="'Rs. ' + item.price"></p>
+                    <!-- Dropdown Panel Layout -->
+                    <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden"
+                         x-show="showDropdown" 
+                         style="display: none;">
+                        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                            <template x-for="item in suggestions">
+                                <a :href="'/shop/' + item.slug + '/'" 
+                                   class="flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50/50 transition-colors group cursor-pointer text-decoration-none block">
+                                    <img :src="item.image" 
+                                         :alt="item.name" 
+                                         class="w-10 h-10 object-cover rounded-md bg-gray-50 border border-gray-100 flex-shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-600 transition-colors m-0" x-text="item.name"></p>
+                                        <p class="text-xs font-black text-gray-500 mt-0.5 m-0" x-text="'Rs. ' + item.price"></p>
+                                    </div>
+                                </a>
+                            </template>
+                        </div>
                     </div>
-                </a>
-            </template>
-        </div>
-    </div>
-</div>
-{% endif %}
+                </div>
+                {% endif %}
             </div>
-            <!-- Right: Dynamic Auth Section (Desktop) -->
+
+            <!-- Right: Dynamic Auth & Cart Section (Desktop) -->
             <div class="hidden md:flex items-center space-x-4">
-                {% if user.is_authenticated %}
-                <!-- 🛒 Cart Icon Link Container -->
+                <!-- 🛒 Cart Icon Link: Only for non-Sellers and non-Delivery personnel (Guests & Customers) -->
+                {% if not user.is_authenticated or user.role != 'SELLER' and user.role != 'DELIVERY_BOY' %}
                 <a href="{% url 'cart:cart_detail' %}"
                     class="relative p-2 text-gray-600 hover:text-indigo-600 transition duration-150 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
-                    <!-- Fixed SVG -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                     </svg>
-                    <!-- Dynamic Notification Badge Count -->
                     {% if cart|length > 0 %}
-                    <span
-                        class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce">
+                    <span class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce">
                         {{ cart|length }}
                     </span>
                     {% endif %}
                 </a>
+                {% endif %}
 
+                {% if user.is_authenticated %}
                 <div class="relative inline-block text-left" x-data="{ open: false }">
-                    <!-- Avatar Circle Trigger Button -->
+                    <!-- Avatar Trigger Button -->
                     <button @click="open = !open" @click.outside="open = false"
                         class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center uppercase shadow-xs hover:bg-blue-700 transition focus:outline-none cursor-pointer">
                         {{ user.username|first }}
@@ -111,95 +104,72 @@
                         x-transition:leave-end="transform opacity-0 scale-95"
                         class="absolute right-0 mt-2 w-48 rounded-xl bg-white border border-gray-200 shadow-lg py-1 z-50 origin-top-right"
                         style="display: none">
-                        <!-- User Meta Header -->
+                        
                         <div class="px-4 py-2 border-b border-gray-100">
                             <p class="text-xs text-gray-400 mb-0.5">Signed in as</p>
                             <div class="flex items-center gap-1.5 min-w-0">
                                 <span class="text-sm font-bold text-gray-900 truncate">{{ user.username }}</span>
-                                <!-- Role Badges -->
                                 {% if user.is_superuser %}
-                                <span
-                                    class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-100 text-red-700 tracking-wide uppercase shrink-0">Admin</span>
+                                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-100 text-red-700 tracking-wide uppercase shrink-0">Admin</span>
                                 {% elif user.role == "SELLER" %}
-                                <span
-                                    class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 tracking-wide uppercase shrink-0">Seller</span>
+                                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 tracking-wide uppercase shrink-0">Seller</span>
                                 {% elif user.role == "DELIVERY_BOY" %}
-                                <span
-                                    class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 tracking-wide uppercase shrink-0">Rider</span>
+                                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 tracking-wide uppercase shrink-0">Rider</span>
                                 {% endif %}
                             </div>
                         </div>
-                        <!-- Dashboard Link Option -->
-                        <a href="#"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">🎛️
-                            Dashboard</a>
-                        <!-- Settings Link Option -->
-                        <a href="#"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">⚙️
-                            Account Settings</a>
+                        
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">🎛️ Dashboard</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition">⚙️ Account Settings</a>
                         <div class="border-t border-gray-100 my-1"></div>
-                        <!-- Logout Button Option -->
+                        
                         <form action="{% url 'accounts:logout' %}" method="post">
                             {% csrf_token %}
-                            <button type="submit"
-                                class="w-full text-left block text-sm font-medium text-red-600 px-4 py-2 hover:bg-gray-50 transition">Log
-                                Out</button>
+                            <button type="submit" class="w-full text-left block text-sm font-medium text-red-600 px-4 py-2 hover:bg-gray-50 transition">Log Out</button>
                         </form>
                     </div>
                 </div>
                 {% else %}
-                <a href="{% url 'accounts:login' %}"
-                    class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">Log In</a>
-                <a href="{% url 'accounts:signup' %}"
-                    class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition shadow-indigo-100">Sign
-                    Up</a>
+                <a href="{% url 'accounts:login' %}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">Log In</a>
+                <a href="{% url 'accounts:signup' %}" class="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition shadow-indigo-100">Sign Up</a>
                 {% endif %}
             </div>
+
             <!-- Mobile Menu Hamburger Button -->
             <div class="flex items-center md:hidden">
                 <button @click="mobileMenuOpen = !mobileMenuOpen" type="button"
                     class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition focus:outline-none">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                        <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" style="display: none;" />
+                        <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" style="display: none;" />
                     </svg>
                 </button>
             </div>
         </div>
     </div>
+
     <!-- Mobile Expandable Dropdown Menu -->
-    <div x-show="mobileMenuOpen" x-collapse class="md:hidden border-t border-gray-100 bg-white shadow-inner"
-        style="display: none">
+    <div x-show="mobileMenuOpen" x-collapse class="md:hidden border-t border-gray-100 bg-white shadow-inner" style="display: none">
         <div class="px-2 pt-2 pb-3 space-y-1">
-            <a href="#"
-                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Explore</a>
-            <a href="#"
-                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Categories</a>
-            {% if user.is_authenticated and user.role == 'seller' %}
-            <a href="{% url 'accounts:seller_dashboard' %}"
-                class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">Seller Panel</a>
+            <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Explore</a>
+            <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Categories</a>
+            {% if user.is_authenticated and user.role == 'SELLER' %}
+            <a href="{% url 'accounts:seller_dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">Seller Panel</a>
             {% endif %}
         </div>
         <div class="pt-4 pb-3 border-t border-gray-200 px-4 bg-gray-50/50">
             {% if user.is_authenticated %}
             <div class="flex items-center mb-3">
-                <div class="text-sm font-medium text-gray-800">{{ user.username }} <span
-                        class="text-xs text-gray-400">({{ user.role }})</span></div>
+                <div class="text-sm font-medium text-gray-800">{{ user.username }} <span class="text-xs text-gray-400">({{ user.role }})</span></div>
             </div>
-            <form action="{% url 'logout' %}" method="post">
+            <form action="{% url 'accounts:logout' %}" method="post">
                 {% csrf_token %}
                 <button type="submit" class="w-full text-left block text-sm font-medium text-red-600">Log Out</button>
             </form>
             {% else %}
             <div class="space-y-2">
-                <a href="{% url 'accounts:login' %}"
-                    class="block text-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">Log
-                    In</a>
-                <a href="{% url 'accounts:signup' %}"
-                    class="block text-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">Sign
-                    Up</a>
+                <a href="{% url 'accounts:login' %}" class="block text-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">Log In</a>
+                <a href="{% url 'accounts:signup' %}" class="block text-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">Sign Up</a>
             </div>
             {% endif %}
         </div>

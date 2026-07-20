@@ -2,7 +2,7 @@
 <div x-show="currentTab === 'products'"
      x-data="{
         viewState: 'list',
-        editingProductId: null,   // null = create mode, set = edit mode
+        editingProductId: null,
 
         deleteModalOpen: false,
         deleteTargetId: null,
@@ -44,7 +44,6 @@
             });
         },
 
-        // Inline Stock/Price save (unchanged behavior, no password needed)
         savingRowId: null,
         saveInlineRow(id, name, price, stock) {
             this.savingRowId = id;
@@ -57,16 +56,13 @@
                 body: JSON.stringify({ name: name, price: price, stock: stock })
             }).then(r => r.json()).then(data => {
                 this.savingRowId = null;
-                if (!data.success) {
-                    alert(data.error || 'Update failed.');
-                }
+                if (!data.success) { alert(data.error || 'Update failed.'); }
             }).catch(() => {
                 this.savingRowId = null;
                 alert('Network error while saving.');
             });
         },
 
-        // Opens the create-form UI pre-filled with existing product data for full editing
         openEditForm(product) {
             this.editingProductId = product.id;
             this.viewState = 'create';
@@ -75,6 +71,11 @@
                 document.getElementById('productCreationForm').querySelector('[name=description]').value = product.description;
                 document.getElementById('productCreationForm').querySelector('[name=price]').value = product.price;
                 document.getElementById('productCreationForm').querySelector('[name=stock]').value = product.stock;
+                
+                // Set relevant tags raw string if editing
+                const relevantTagsInput = document.getElementById('productCreationForm').querySelector('[name=relevant_tags]');
+                if (relevantTagsInput) { relevantTagsInput.value = product.relevant_tags || ''; }
+
                 if (window.rebuildCategoryChainForExisting) {
                     window.rebuildCategoryChainForExisting(product.category_id);
                 }
@@ -88,13 +89,13 @@
             this.formError = '';
 
             if (this.editingProductId) {
-                // EDIT MODE — send JSON to the update endpoint
                 const payload = {
                     name: formData.get('name'),
                     description: formData.get('description'),
                     price: formData.get('price'),
                     stock: formData.get('stock'),
                     category: formData.get('category'),
+                    relevant_tags: formData.get('relevant_tags') || '',
                     media_payload: formData.get('media_payload') || '[]'
                 };
                 fetch(`/shop/dashboard/seller/products/${this.editingProductId}/update/`, {
@@ -120,7 +121,6 @@
                     this.formError = 'Network error encountered.';
                 });
             } else {
-                // CREATE MODE — unchanged, original logic
                 fetch('/shop/dashboard/seller/products/create-ajax/', {
                     method: 'POST',
                     headers: { 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content },
@@ -145,168 +145,10 @@
      }"
      class="bg-white rounded-xl shadow-xs border border-gray-200 p-6" x-transition>
 
-    <!-- ================= SUB-VIEW A: PRODUCT INVENTORY LIST ================= -->
-    <div x-show="viewState === 'list'" class="space-y-6">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900">Your Product Inventory</h3>
-                <p class="text-xs text-gray-400">Quick-edit pricing, adjust inventory, or list new items.</p>
-            </div>
-            <button type="button" @click.prevent="editingProductId = null; viewState = 'create'" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition cursor-pointer">
-                ＋ Add New Product
-            </button>
-        </div>
-
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200 text-gray-400 text-xs uppercase font-semibold">
-                        <th class="p-4">Product Details</th>
-                        <th class="p-4 w-44">Stock Control</th>
-                        <th class="p-4 w-36">Price (Rs. )</th>
-                        <th class="p-4 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 text-gray-700 bg-white">
-                    {% if products %}
-                        {% for product in products %}
-                        <tr id="product-row-{{ product.pk }}" class="hover:bg-gray-50/70 transition"
-                            x-data="{
-                                rowStock: {{ product.stock }},
-                                rowPrice: {{ product.price }}
-                            }">
-                            <td class="p-4">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-gray-900">{{ product.name }}</span>
-                                    <button type="button"
-                                        @click="openEditForm({
-                                            id: {{ product.pk }},
-                                            name: '{{ product.name|escapejs }}',
-                                            description: '{{ product.description|escapejs }}',
-                                            price: '{{ product.price }}',
-                                            stock: {{ product.stock }},
-                                            category_id: '{{ product.category_id }}'
-                                        })"
-                                        class="text-gray-400 hover:text-indigo-600 transition cursor-pointer" title="Edit full product">
-                                        ✏️
-                                    </button>
-                                </div>
-                            </td>
-                            <td class="p-4">
-                                <input type="number" x-model.number="rowStock" min="0"
-                                    class="w-20 px-2 py-1 border border-gray-200 rounded text-sm focus:outline-hidden focus:border-indigo-500">
-                            </td>
-                            <td class="p-4">
-                                <input type="number" x-model.number="rowPrice" min="0" step="0.01"
-                                    class="w-24 px-2 py-1 border border-gray-200 rounded text-sm focus:outline-hidden focus:border-indigo-500">
-                            </td>
-                            <td class="p-4 text-right whitespace-nowrap">
-                                <div class="inline-flex gap-2">
-                                    <button
-                                        @click="saveInlineRow({{ product.pk }}, '{{ product.name|escapejs }}', rowPrice, rowStock)"
-                                        :disabled="savingRowId === {{ product.pk }}"
-                                        class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1.5 rounded hover:bg-indigo-100 disabled:opacity-50 cursor-pointer">
-                                        <span x-text="savingRowId === {{ product.pk }} ? 'Saving...' : 'Save'"></span>
-                                    </button>
-                                    <button @click="openDeleteModal({{ product.pk }}, '{{ product.name|escapejs }}')"
-                                        class="text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded cursor-pointer">
-                                        Delete
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4" class="p-8 text-center text-gray-400 text-sm">No products listed yet.</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- ================= SUB-VIEW B: ADD / EDIT PRODUCT FORM ================= -->
-    <div x-show="viewState === 'create'" style="display: none;" :style="viewState === 'create' ? 'display: block;' : 'display: none;'" class="space-y-6">
-        <div class="border-b border-gray-100 pb-4 mb-6 flex justify-between items-center">
-            <div>
-                <h2 class="text-2xl font-black text-gray-900" x-text="editingProductId ? 'Edit Product Listing' : 'List a New Marketplace Product'"></h2>
-                <p class="text-sm text-gray-500 mt-1">Provide pricing, stock variations, and media galleries up to 10 items.</p>
-            </div>
-            <button type="button" @click="viewState = 'list'; editingProductId = null" class="text-xs bg-gray-100 text-gray-600 font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition cursor-pointer">
-                ← Return to Inventory
-            </button>
-        </div>
-
-        <form x-on:submit.prevent="submitCreateForm()" id="productCreationForm" class="space-y-6">
-            {% csrf_token %}
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Product Title</label>
-                        <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="e.g., Wireless Mechanical Keyboard">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Item Description</label>
-                        <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="Describe features, dimensions, or details..."></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Price (Rs. )</label>
-                            <input type="number" name="price" step="0.01" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="0.00">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Stock Units</label>
-                            <input type="number" name="stock" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="0">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Marketplace Category</label>
-                        <div id="categoryChainContainer" class="space-y-2">
-                            <!-- Level selects are injected here by JS -->
-                        </div>
-                        <input type="hidden" name="category" id="id_category_final" required>
-                    </div>
-                </div>
-
-                <!-- Interactive Media Vault Area Panel (untouched) -->
-                <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
-                    <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">📦 Media Catalog Setup (Max 10 Assets)</h3>
-                    <input type="hidden" name="media_payload" id="id_media_payload">
-
-                    <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-2xs">
-                        <label class="block text-xs font-black text-gray-600 uppercase mb-2">📸 Local Image Uploader (Max 1MB)</label>
-                        <input type="file" id="imgbbPicker" accept="image/*" class="text-xs block w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                        <p id="uploadStatus" class="text-xs font-semibold mt-2 text-gray-500"></p>
-                    </div>
-
-                    <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-2xs space-y-2">
-                        <label class="block text-xs font-black text-gray-600 uppercase">📺 Embed YouTube Video (Max 1)</label>
-                        <div class="flex gap-2">
-                            <input type="url" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full text-xs px-3 py-2 border rounded border-gray-300 focus:outline-indigo-600">
-                            <button type="button" id="addVideoBtn" class="text-xs bg-gray-900 text-white font-bold px-4 py-2 rounded hover:bg-gray-800 transition cursor-pointer">Attach</button>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center px-1 text-xs font-bold text-gray-500">
-                        <span id="assetCounter">Assets Linked: 0 / 10</span>
-                        <span id="videoStatusCounter" class="text-purple-600">Videos: 0/1</span>
-                    </div>
-
-                    <div id="mediaPreviewGrid" class="grid grid-cols-5 gap-2 pt-2 min-h-[70px] bg-white rounded-lg p-2 border border-gray-100">
-                    </div>
-                </div>
-            </div>
-
-            <div x-show="formError" class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm font-semibold text-rose-700" x-text="formError" style="display: none;"></div>
-
-            <div class="flex gap-4 pt-4 border-t border-gray-100">
-                <button type="submit" :disabled="formSubmitting" class="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-xs disabled:opacity-50 cursor-pointer">
-                    <span x-text="formSubmitting ? 'Saving...' : (editingProductId ? 'Save Changes' : 'Publish Product')"></span>
-                </button>
-                <button type="button" @click="viewState = 'list'; editingProductId = null" class="bg-gray-100 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-200 transition cursor-pointer">Discard</button>
-            </div>
-        </form>
-    </div>
+    <!-- Sub-Task Modules -->
+     <!-- Sub-Task Modules -->
+{% include "dashboard/seller/product_action/product_list.html" %}
+{% include "dashboard/seller/product_action/product_form.html" %}
 
     <!-- ================= DELETE CONFIRMATION MODAL ================= -->
     <div x-show="deleteModalOpen" x-cloak
@@ -332,232 +174,4 @@
     </div>
 </div>
 
-<!-- Dynamic Injection Setup Node for Script Block Handling -->
-{{ IMGBB_API_KEY|json_script:"imgbb-key-data" }}
-<!-- Inject the category tree dataset safely into the DOM via Django template tags -->
-{{ category_tree_json|json_script:"category-tree-data" }}
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // ==========================================
-    // 1. MEDIA GALLERY ATTACHMENT LOGIC
-    // ==========================================
-    let attachedMedia = [];
-
-    const keyDataElement = document.getElementById('imgbb-key-data');
-    const IMGBB_API_KEY = keyDataElement ? JSON.parse(keyDataElement.textContent) : '';
-
-    const imgbbPicker = document.getElementById('imgbbPicker');
-    const uploadStatus = document.getElementById('uploadStatus');
-    const ytUrlInput = document.getElementById('ytUrlInput');
-    const addVideoBtn = document.getElementById('addVideoBtn');
-    const mediaPreviewGrid = document.getElementById('mediaPreviewGrid');
-    const hiddenPayloadInput = document.getElementById('id_media_payload');
-    const assetCounter = document.getElementById('assetCounter');
-    const videoStatusCounter = document.getElementById('videoStatusCounter');
-
-    function getYouTubeEmbedId(url) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    }
-
-    function syncStateToHiddenInput() {
-        if(hiddenPayloadInput) {
-            hiddenPayloadInput.value = JSON.stringify(attachedMedia);
-        }
-        const videosCount = attachedMedia.filter(m => m.type === 'VIDEO').length;
-        if(assetCounter) assetCounter.innerText = `Assets Linked: ${attachedMedia.length} / 10`;
-        if(videoStatusCounter) videoStatusCounter.innerText = `Videos: ${videosCount} / 1`;
-    }
-
-    function renderMediaGalleryPreviews() {
-        if(!mediaPreviewGrid) return;
-        mediaPreviewGrid.innerHTML = '';
-        if(attachedMedia.length === 0) {
-            mediaPreviewGrid.innerHTML = '<span class="text-[11px] text-gray-400 col-span-5 text-center my-auto">No pictures or video content linked.</span>';
-            return;
-        }
-
-        attachedMedia.forEach((item, index) => {
-            const container = document.createElement('div');
-            container.className = "relative group w-full aspect-square bg-gray-100 rounded-md border border-gray-200 overflow-hidden shadow-2xs";
-
-            if(item.type === 'IMAGE') {
-                container.innerHTML = `<img src="${item.url}" class="w-full h-full object-cover">`;
-            } else {
-                const embedId = getYouTubeEmbedId(item.url);
-                const thumbUrl = embedId ? `https://img.youtube.com/vi/${embedId}/mqdefault.jpg` : '';
-                container.innerHTML = `
-                    <img src="${thumbUrl}" class="w-full h-full object-cover brightness-75">
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">🔴</div>
-                `;
-            }
-
-            const delBtn = document.createElement('button');
-            delBtn.type = "button";
-            delBtn.className = "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold cursor-pointer";
-            delBtn.innerText = "Remove";
-            delBtn.addEventListener('click', () => {
-                attachedMedia.splice(index, 1);
-                renderMediaGalleryPreviews();
-                syncStateToHiddenInput();
-            });
-
-            container.appendChild(delBtn);
-            mediaPreviewGrid.appendChild(container);
-        });
-    }
-
-    if(imgbbPicker) {
-        imgbbPicker.addEventListener('change', async function() {
-            if (!this.files || this.files.length === 0) return;
-            const file = this.files[0];
-
-            const maxBytes = 1 * 1024 * 1024;
-            if (file.size > maxBytes) {
-                uploadStatus.innerHTML = "❌ Rejected! Image file size cannot exceed 1 MB.";
-                uploadStatus.style.color = "#EF4444";
-                this.value = "";
-                return;
-            }
-
-            if(attachedMedia.length >= 10) {
-                uploadStatus.innerHTML = "❌ Target ceiling reached. Max total 10 uploads combined.";
-                uploadStatus.style.color = "#EF4444";
-                return;
-            }
-
-            uploadStatus.innerHTML = '⏳ Uploading safely to ImgBB storage cloud...';
-            uploadStatus.style.color = "#3B82F6";
-
-            const formData = new FormData();
-            formData.append('image', file);
-
-            try {
-                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    uploadStatus.innerHTML = '✅ Cloud Upload Completed Successfully!';
-                    uploadStatus.style.color = "#10B981";
-
-                    attachedMedia.push({ type: 'IMAGE', url: result.data.url });
-                    renderMediaGalleryPreviews();
-                    syncStateToHiddenInput();
-                    this.value = "";
-                } else {
-                    throw new Error();
-                }
-            } catch (error) {
-                uploadStatus.innerHTML = '❌ Cloud Gateway Handshake Failed.';
-                uploadStatus.style.color = "#EF4444";
-            }
-        });
-    }
-
-    if(addVideoBtn) {
-        addVideoBtn.addEventListener('click', function() {
-            const url = ytUrlInput.value.trim();
-            if(!url) return;
-
-            const embedId = getYouTubeEmbedId(url);
-            if(!embedId) {
-                alert("Please input a standard, recognizable YouTube video web link.");
-                return;
-            }
-
-            const hasVideo = attachedMedia.some(m => m.type === 'VIDEO');
-            if(hasVideo) {
-                alert("Item quota warning: Only 1 video clip is permitted per item entry.");
-                return;
-            }
-
-            if(attachedMedia.length >= 10) {
-                alert("Maximum items cap reached. Delete something before appending another.");
-                return;
-            }
-
-            attachedMedia.push({ type: 'VIDEO', url: url });
-            renderMediaGalleryPreviews();
-            syncStateToHiddenInput();
-            ytUrlInput.value = "";
-        });
-    }
-
-    renderMediaGalleryPreviews();
-    syncStateToHiddenInput();
-
-    // ==========================================
-    // 2. DYNAMIC CASCADING CATEGORY TREE LOGIC
-    // ==========================================
-    const categoryTreeDataEl = document.getElementById('category-tree-data');
-    const categoryTree = categoryTreeDataEl ? JSON.parse(categoryTreeDataEl.textContent) : [];
-    const chainContainer = document.getElementById('categoryChainContainer');
-    const finalCategoryInput = document.getElementById('id_category_final');
-
-    function getChildren(parentId) {
-        return categoryTree.filter(c => c.parent_id === parentId);
-    }
-
-    function buildLevel(parentId, levelIndex) {
-        // Remove any deeper levels beyond this one (user changed a higher selection)
-        if(chainContainer) {
-            Array.from(chainContainer.children).slice(levelIndex).forEach(el => el.remove());
-        }
-
-        const children = getChildren(parentId);
-        if (children.length === 0) {
-            // No more children at this branch — parentId is the final leaf category
-            if(finalCategoryInput) finalCategoryInput.value = parentId || '';
-            return;
-        }
-
-        const select = document.createElement('select');
-        select.className = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm mt-2";
-        select.innerHTML = `<option value="" disabled selected>Select ${levelIndex === 0 ? 'a category' : 'a subcategory'}</option>` +
-            children.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-        select.addEventListener('change', function() {
-            const chosenId = parseInt(this.value, 10);
-            if(finalCategoryInput) finalCategoryInput.value = chosenId; // tentatively the final choice, unless it has children too
-            buildLevel(chosenId, levelIndex + 1);
-        });
-
-        if(chainContainer) chainContainer.appendChild(select);
-        if(finalCategoryInput) finalCategoryInput.value = ''; // nothing fully chosen yet at this level
-    }
-
-    // Kick off with top-level categories (parent_id === null)
-    buildLevel(null, 0);
-
-    // Expose for the edit-form pre-fill (openEditForm) to call when editing an existing product
-    window.rebuildCategoryChainForExisting = function(existingCategoryId) {
-        if (!existingCategoryId) { buildLevel(null, 0); return; }
-
-        // Walk up from the existing category to build the full ancestor chain
-        const path = [];
-        let current = categoryTree.find(c => c.id === parseInt(existingCategoryId, 10));
-        while (current) {
-            path.unshift(current);
-            current = current.parent_id ? categoryTree.find(c => c.id === current.parent_id) : null;
-        }
-
-        if(chainContainer) chainContainer.innerHTML = '';
-        let parentId = null;
-        path.forEach((node, idx) => {
-            buildLevel(parentId, idx);
-            const select = chainContainer.children[idx];
-            if(select) select.value = node.id;
-            parentId = node.id;
-        });
-        
-        // Build the next level under the last selected node (its children, if any)
-        buildLevel(parentId, path.length);
-        if(finalCategoryInput) finalCategoryInput.value = parentId;
-    };
-});
-</script>
+{% include "dashboard/seller/product_action/product_scripts.html" %}

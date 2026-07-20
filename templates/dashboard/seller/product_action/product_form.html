@@ -1,0 +1,90 @@
+<!-- ================= SUB-VIEW B: ADD / EDIT PRODUCT FORM ================= -->
+<div x-show="viewState === 'create'" style="display: none;" :style="viewState === 'create' ? 'display: block;' : 'display: none;'" class="space-y-6">
+    <div class="border-b border-gray-100 pb-4 mb-6 flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-black text-gray-900" x-text="editingProductId ? 'Edit Product Listing' : 'List a New Marketplace Product'"></h2>
+            <p class="text-sm text-gray-500 mt-1">Provide pricing, stock variations, tags, and media galleries up to 10 items.</p>
+        </div>
+        <button type="button" @click="viewState = 'list'; editingProductId = null" class="text-xs bg-gray-100 text-gray-600 font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition cursor-pointer">
+            ← Return to Inventory
+        </button>
+    </div>
+
+    <form x-on:submit.prevent="submitCreateForm()" id="productCreationForm" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Product Title</label>
+                    <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="e.g., Wireless Mechanical Keyboard">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Item Description</label>
+                    <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="Describe features, dimensions, or details..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Price (Rs. )</label>
+                        <input type="number" name="price" step="0.01" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Stock Units</label>
+                        <input type="number" name="stock" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Marketplace Category</label>
+                    <div id="categoryChainContainer" class="space-y-2">
+                        <!-- Level selects are injected here by JS -->
+                    </div>
+                    <input type="hidden" name="category" id="id_category_final" required>
+                </div>
+                
+                <!-- NEW MODEL FIELD: Relevant Search Indexing Tags -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Relevant Search Keywords</label>
+                    <input type="text" name="relevant_tags" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-600 text-sm" placeholder="Separated by commas e.g. clothing, summer, slim-fit">
+                    <p class="text-[11px] text-gray-400 mt-1">Helps surface this item inside user query recommendations.</p>
+                </div>
+            </div>
+
+            <!-- Interactive Media Vault Area Panel -->
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">📦 Media Catalog Setup (Max 10 Assets)</h3>
+                <input type="hidden" name="media_payload" id="id_media_payload">
+
+                <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-2xs">
+                    <label class="block text-xs font-black text-gray-600 uppercase mb-2">📸 Local Image Uploader (Max 1MB)</label>
+                    <input type="file" id="imgbbPicker" accept="image/*" class="text-xs block w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    <p id="uploadStatus" class="text-xs font-semibold mt-2 text-gray-500"></p>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-2xs space-y-2">
+                    <label class="block text-xs font-black text-gray-600 uppercase">📺 Embed YouTube Video (Max 1)</label>
+                    <div class="flex gap-2">
+                        <input type="url" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full text-xs px-3 py-2 border rounded border-gray-300 focus:outline-indigo-600">
+                        <button type="button" id="addVideoBtn" class="text-xs bg-gray-900 text-white font-bold px-4 py-2 rounded hover:bg-gray-800 transition cursor-pointer">Attach</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center px-1 text-xs font-bold text-gray-500">
+                    <span id="assetCounter">Assets Linked: 0 / 10</span>
+                    <span id="videoStatusCounter" class="text-purple-600">Videos: 0/1</span>
+                </div>
+
+                <div id="mediaPreviewGrid" class="grid grid-cols-5 gap-2 pt-2 min-h-[70px] bg-white rounded-lg p-2 border border-gray-100">
+                </div>
+            </div>
+        </div>
+
+        <div x-show="formError" class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm font-semibold text-rose-700" x-text="formError" style="display: none;"></div>
+
+        <div class="flex gap-4 pt-4 border-t border-gray-100">
+            <button type="submit" :disabled="formSubmitting" class="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-xs disabled:opacity-50 cursor-pointer">
+                <span x-text="formSubmitting ? 'Saving...' : (editingProductId ? 'Save Changes' : 'Publish Product')"></span>
+            </button>
+            <button type="button" @click="viewState = 'list'; editingProductId = null" class="bg-gray-100 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-200 transition cursor-pointer">Discard</button>
+        </div>
+    </form>
+</div>

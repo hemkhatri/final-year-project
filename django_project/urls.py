@@ -33,3 +33,5 @@ urlpatterns = [
     path('cart/', include('cart.urls')),
     path('payment/', include('payment.urls')), 
 ]
+
+handler404 = 'django.views.defaults.page_not_found'
