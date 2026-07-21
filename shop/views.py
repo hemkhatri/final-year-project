@@ -1,5 +1,8 @@
 # shop/views.py
 import json
+from django.core.cache import cache
+from django.db.models import Case, When
+from shop.tasks import update_product_recommendations_cache
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth import authenticate
@@ -128,6 +131,39 @@ class ProductDetailView(DetailView):
     template_name = 'shop/product_detail.html'
     context_object_name = 'product'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = self.object
+        
+        # Consistent cache key using product.slug
+        cache_key = f"rec_product_{product.slug}"
+        rec_ids = cache.get(cache_key)
+
+        if not rec_ids:
+            user_id = self.request.user.id if self.request.user.is_authenticated else None
+            try:
+                # Pass product_slug to the task instead of product_id
+                update_product_recommendations_cache.delay(
+                    product_slug=product.slug, 
+                    user_id=user_id
+                )
+            except Exception as e:
+                pass
+            
+            # Fallback for current request
+            recommendations = Product.objects.filter(
+                available=True
+            ).exclude(id=product.id).order_by('-average_rating', '-created')[:4]
+        else:
+            preserved_order = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(rec_ids)])
+            recommendations = Product.objects.filter(
+                id__in=rec_ids, 
+                available=True
+            ).order_by(preserved_order)
+
+        context['recommended_products'] = recommendations
+        return context
+    
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
