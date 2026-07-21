@@ -22,6 +22,13 @@ class Category(models.Model):
     )
     image_url = models.URLField(max_length=500, blank=True, null=True)
     
+    # 🎨 Color field (stores hex codes like #4F46E5 or #10B981)
+    color = models.CharField(
+        max_length=7, 
+        default='#4F46E5', 
+        help_text="Hex color code (e.g., #4F46E5)"
+    )
+
     class Meta:
         verbose_name_plural = "categories"
 
@@ -29,7 +36,6 @@ class Category(models.Model):
         if self.parent:
             return f"{self.parent.name} → {self.name}"
         return self.name
-
 
 class Product(models.Model):
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='products')

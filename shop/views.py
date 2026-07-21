@@ -374,15 +374,20 @@ def product_search_view(request):
     if query:
         keywords = query.split()
         
-        # Adding prefetch_related('media') optimizes the background image execution 
-        results = Product.objects.filter(available=True).prefetch_related('media')
+        # Start with available products and optimize database hits
+        base_qs = Product.objects.filter(available=True).select_related('category').prefetch_related('media')
         
+        # Build a Q query that includes category and subcategory names
+        query_filter = Q()
         for word in keywords:
-            results = results.filter(
-                Q(name__icontains=word) | Q(description__icontains=word)
+            query_filter &= (
+                Q(name__icontains=word) | 
+                Q(description__icontains=word) |
+                Q(category__name__icontains=word) |
+                Q(category__parent__name__icontains=word)  # Includes parent category matching
             )
             
-        results = results.distinct()
+        results = base_qs.filter(query_filter).distinct()
 
     context = {
         'query': query,
