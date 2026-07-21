@@ -367,33 +367,133 @@ def careers_landing(request):
     return render(request, 'shop/careers.html')
 
 
+
 def product_search_view(request):
     query = request.GET.get('q', '').strip()
-    results = Product.objects.none()
+    category_slug = request.GET.get('category', '').strip()
 
+    base_products = Product.objects.filter(available=True).select_related('category').prefetch_related('media')
+    active_category = None
+    category_schema = {}
+
+    # If category slug is supplied directly
+    if category_slug:
+        active_category = Category.objects.filter(slug=category_slug).first()
+
+    # If user searched for a category name in the search bar (e.g. "Fashion & Apparel")
+    elif query:
+        matched_cat = Category.objects.filter(name__iexact=query).first()
+        if matched_cat:
+            active_category = matched_cat
+            query = '' # Clear text search so it doesn't filter out products without the exact string
+
+    # 1. APPLY CATEGORY FILTERING & INHERITANCE
+    if active_category:
+        # Include products in active category OR any child/descendant categories
+        child_cats = Category.objects.filter(Q(parent=active_category) | Q(parent__parent=active_category))
+        
+        if child_cats.exists():
+            cat_ids = list(child_cats.values_list('id', flat=True)) + [active_category.id]
+            base_products = base_products.filter(category_id__in=cat_ids)
+            
+            # Combine schema filters from parent and child categories
+            for cat in [active_category] + list(child_cats):
+                c_schema = cat.get_filter_schema() if hasattr(cat, 'get_filter_schema') else getattr(cat, 'filter_schema', {})
+                if isinstance(c_schema, dict):
+                    for k, v in c_schema.items():
+                        if k not in category_schema:
+                            category_schema[k] = []
+                        if isinstance(v, list):
+                            category_schema[k] = list(set(category_schema[k] + v))
+                        elif v and v not in category_schema[k]:
+                            category_schema[k].append(v)
+        else:
+            base_products = base_products.filter(category=active_category)
+            category_schema = active_category.get_filter_schema() if hasattr(active_category, 'get_filter_schema') else getattr(active_category, 'filter_schema', {})
+
+    # 2. APPLY TEXT SEARCH QUERY (if not resolved to a category)
     if query:
         keywords = query.split()
-        
-        # Start with available products and optimize database hits
-        base_qs = Product.objects.filter(available=True).select_related('category').prefetch_related('media')
-        
-        # Build a Q query that includes category and subcategory names
         query_filter = Q()
         for word in keywords:
             query_filter &= (
-                Q(name__icontains=word) | 
+                Q(name__icontains=word) |
                 Q(description__icontains=word) |
                 Q(category__name__icontains=word) |
-                Q(category__parent__name__icontains=word)  # Includes parent category matching
+                Q(relevant_tags__icontains=word)
             )
-            
-        results = base_qs.filter(query_filter).distinct()
+        base_products = base_products.filter(query_filter)
+
+    # 3. AGGREGATE PRODUCT ATTRIBUTE COUNTS
+    extracted_counts = {}
+    for prod in base_products:
+        if isinstance(prod.attributes, dict):
+            for attr_key, attr_val in prod.attributes.items():
+                if attr_key not in extracted_counts:
+                    extracted_counts[attr_key] = {}
+
+                val_items = attr_val if isinstance(attr_val, list) else [attr_val]
+                for item in val_items:
+                    item_str = str(item).strip()
+                    if item_str:
+                        extracted_counts[attr_key][item_str] = extracted_counts[attr_key].get(item_str, 0) + 1
+
+    # 4. BUILD DYNAMIC SIDEBAR FILTERS
+    products = base_products
+    has_active_filters = False
+    dynamic_filters = []
+
+    allowed_keys = category_schema.keys() if category_schema else extracted_counts.keys()
+
+    for attr_key in allowed_keys:
+        options_dict = extracted_counts.get(attr_key, {})
+        if not options_dict:
+            continue
+
+        selected_values = [v.strip() for v in request.GET.getlist(attr_key) if v.strip()]
+
+        if selected_values:
+            has_active_filters = True
+            json_q = Q()
+            for val in selected_values:
+                json_q |= Q(**{f"attributes__{attr_key}__icontains": val})
+            products = products.filter(json_q)
+
+        schema_options = category_schema.get(attr_key, [])
+        if isinstance(schema_options, str):
+            schema_options = [schema_options]
+
+        display_options = schema_options if schema_options else list(options_dict.keys())
+
+        options_list = []
+        for opt_val in display_options:
+            count = options_dict.get(opt_val, 0)
+            if count > 0:
+                options_list.append({
+                    'value': opt_val,
+                    'label': opt_val,
+                    'count': count,
+                    'is_selected': opt_val in selected_values
+                })
+
+        if options_list:
+            dynamic_filters.append({
+                'id': attr_key,
+                'label': attr_key.replace('_', ' ').title(),
+                'options': options_list
+            })
+
+    products = products.distinct()
 
     context = {
         'query': query,
-        'products': results,
-        'count': results.count()
+        'products': products,
+        'count': products.count(),
+        'active_category': active_category,
+        'dynamic_filters': dynamic_filters,
+        'has_active_filters': has_active_filters,
     }
+
     return render(request, 'shop/search_results.html', context)
 
 

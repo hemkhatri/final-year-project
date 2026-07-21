@@ -21,51 +21,77 @@ class Category(models.Model):
         related_name='subcategories'
     )
     image_url = models.URLField(max_length=500, blank=True, null=True)
-    
-    # 🎨 Color field (stores hex codes like #4F46E5 or #10B981)
     color = models.CharField(
         max_length=7, 
         default='#4F46E5', 
         help_text="Hex color code (e.g., #4F46E5)"
     )
 
+    # 🔑 NEW: Field to store parent/child filter schemas
+    filter_schema = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="JSON object defining available filter keys/options"
+    )
+
     class Meta:
         verbose_name_plural = "categories"
+
+    def get_filter_schema(self):
+        """
+        Returns this category's filter_schema if populated.
+        Otherwise inherits the parent category's filter_schema.
+        """
+        # Fix: Check if dictionary has keys, even if values are None
+        if isinstance(self.filter_schema, dict) and len(self.filter_schema) > 0:
+            return self.filter_schema
+        if self.parent and isinstance(self.parent.filter_schema, dict) and len(self.parent.filter_schema) > 0:
+            return self.parent.filter_schema
+        return {}
 
     def __str__(self):
         if self.parent:
             return f"{self.parent.name} → {self.name}"
         return self.name
 
+
+
+
 class Product(models.Model):
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='products')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True) # Kept intact as requested!
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.IntegerField(default=0)
     available = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
-    # ===== NEW: Analytics & Performance Metrics =====
-    total_views = models.PositiveIntegerField(default=0, help_text="Total product detail page views")
-    total_search_appears = models.PositiveIntegerField(default=0, help_text="How many times this product appeared in search results")
-    total_bought = models.PositiveIntegerField(default=0, help_text="Total lifetime sales count")
+    # 🔑 NEW: Dynamic attributes stored in JSON format
+    # Examples:
+    # Fashion: {"sub_type": "jeans", "size": "XL"}
+    # Kitchen: {"sub_type": "rice_cooker", "capacity": "3L"}
+    attributes = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="JSON format properties (e.g. {\"sub_type\": \"jeans\", \"size\": \"L\"})"
+    )
 
-    # ===== NEW: Reviews Summary Metrics =====
-    # Storing these directly on the product prevents heavy aggregate database hits on listing pages
-    total_reviews = models.PositiveIntegerField(default=0, help_text="Total number of reviews submitted")
-    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00, help_text="Average review rating out of 5.00")
+    # Analytics & Metrics
+    total_views = models.PositiveIntegerField(default=0)
+    total_search_appears = models.PositiveIntegerField(default=0)
+    total_bought = models.PositiveIntegerField(default=0)
 
-    # ===== NEW: Tagging System =====
-    # 1. Structured linking to your existing SearchTag model
+    # Reviews Summary
+    total_reviews = models.PositiveIntegerField(default=0)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+
+    # Tagging System
     tags = models.ManyToManyField('SearchTag', blank=True, related_name='products')
-    
-    # 2. Simple flat storage for comma-separated ad-hoc keyword entries
     relevant_tags = models.TextField(
         blank=True, 
-        help_text="Comma-separated plain text keywords for search indexing (e.g., 'summer, light, cotton')"
+        help_text="Comma-separated plain text keywords for search indexing"
     )
 
     @property
@@ -76,6 +102,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
     
+
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_reviews')
