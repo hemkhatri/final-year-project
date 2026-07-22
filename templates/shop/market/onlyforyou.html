@@ -1,0 +1,145 @@
+<div class="space-y-6 my-8">
+    <!-- Header Banner -->
+    <div class="bg-gradient-to-r from-slate-800 to-indigo-950 rounded-2xl p-6 text-white shadow-xs">
+        <h1 class="text-2xl md:text-3xl font-black">Only For You ✨</h1>
+        <p class="text-slate-300 text-sm mt-1">Handpicked recommendations tailored specifically to your taste and interests.</p>
+    </div>
+
+    <!-- Product Layout Shelf -->
+    {% if only_for_you_products %}
+    <div id="only-for-you-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        {% for product in only_for_you_products %}
+        <a href="{% url 'shop:product_detail' product.slug %}" class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer">
+            <div>
+                <!-- Cover Image -->
+                <div class="w-full aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                    <img src="{{ product.cover_image|default:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500' }}" 
+                         alt="{{ product.name }}" 
+                         loading="lazy"
+                         decoding="async"
+                         class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
+                    <span class="absolute top-2 right-2 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                        For You
+                    </span>
+                </div>
+
+                <!-- Info -->
+                <div class="p-3 pb-1 space-y-0.5">
+                    <h3 class="font-bold text-gray-800 text-sm truncate group-hover:text-slate-800 transition-colors">{{ product.name }}</h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs text-amber-500 font-bold">★</span>
+                        <span class="text-xs font-bold text-gray-800">{{ product.average_rating|default:"0.0"|floatformat:1 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price & Action -->
+            <div class="p-3 pt-0">
+                <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                    <span class="text-base font-black text-gray-900">Rs. {{ product.price }}</span>
+                    <div class="p-1.5 text-slate-800 bg-slate-100 group-hover:bg-slate-800 group-hover:text-white rounded-lg transition duration-150 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Load More Button Container -->
+    <div class="text-center pt-4" id="load-more-container">
+        <button id="load-more-btn" 
+                class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl shadow-xs transition duration-200 cursor-pointer inline-flex items-center gap-2">
+            <span>Load More Products</span>
+            <svg id="load-spinner" class="w-4 h-4 hidden animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </button>
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
+        <p class="text-gray-400 font-medium">We don't have any custom recommendations for you right now.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- AJAX Load More Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let currentOffset = 12; // Initial batch rendered in view
+        const loadBtn = document.getElementById("load-more-btn");
+        const spinner = document.getElementById("load-spinner");
+        const grid = document.getElementById("only-for-you-grid");
+        const container = document.getElementById("load-more-container");
+
+        if (!loadBtn) return;
+
+        loadBtn.addEventListener("click", function () {
+            // Show Spinner & Disable Button
+            spinner.classList.remove("hidden");
+            loadBtn.disabled = true;
+
+            fetch(`{% url 'shop:load_more_only_for_you' %}?offset=${currentOffset}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.products && data.products.length > 0) {
+                        data.products.forEach(product => {
+                            const productCard = `
+                                <a href="/shop/product/${product.slug}/" class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer">
+                                    <div>
+                                        <div class="w-full aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                                            <img src="${product.cover_image}" 
+                                                 alt="${product.name}" 
+                                                 loading="lazy"
+                                                 decoding="async"
+                                                 class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
+                                            <span class="absolute top-2 right-2 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                                                For You
+                                            </span>
+                                        </div>
+                                        <div class="p-3 pb-1 space-y-0.5">
+                                            <h3 class="font-bold text-gray-800 text-sm truncate group-hover:text-slate-800 transition-colors">${product.name}</h3>
+                                            <div class="flex items-center gap-1">
+                                                <span class="text-xs text-amber-500 font-bold">★</span>
+                                                <span class="text-xs font-bold text-gray-800">${product.rating}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="p-3 pt-0">
+                                        <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                                            <span class="text-base font-black text-gray-900">Rs. ${product.price}</span>
+                                            <div class="p-1.5 text-slate-800 bg-slate-100 group-hover:bg-slate-800 group-hover:text-white rounded-lg transition duration-150 flex items-center justify-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            `;
+                            grid.insertAdjacentHTML("beforeend", productCard);
+                        });
+
+                        currentOffset += data.products.length;
+
+                        // Hide button if no more products are available
+                        if (!data.has_more) {
+                            container.innerHTML = `<p class="text-xs text-gray-400 font-semibold mt-2">✨ You've reached the end of custom recommendations!</p>`;
+                        }
+                    } else {
+                        container.innerHTML = `<p class="text-xs text-gray-400 font-semibold mt-2">✨ You've reached the end of custom recommendations!</p>`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Error loading products:", err);
+                })
+                .finally(() => {
+                    spinner.classList.add("hidden");
+                    loadBtn.disabled = false;
+                });
+        });
+    });
+</script>

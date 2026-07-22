@@ -5,7 +5,7 @@ from .views import (
     ProductUpdateAjaxView, ProductDeleteView, ProductCreateAjaxView, 
     SellerOrdersJsonView, category_list_view, become_seller_view, 
     become_seller_landing, privacy_policy, careers_landing, 
-    product_search_view, autocomplete_search_view
+    product_search_view, autocomplete_search_view, load_more_only_for_you
 )
 
 app_name = 'shop'
@@ -30,4 +30,5 @@ urlpatterns = [
     
     # Catch-all slug pattern LAST
     path('<slug:slug>/', ProductDetailView.as_view(), name='product_detail'),
+    path("api/load-more-for-you/", load_more_only_for_you,name="load_more_only_for_you"),
 ]

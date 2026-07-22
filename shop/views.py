@@ -21,6 +21,8 @@ from django.shortcuts import render, redirect
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from .become_seller import BecomeSellerForm
+import random
+from datetime import datetime, timedelta
 
 
 
@@ -120,50 +122,157 @@ class ProductDeleteView(LoginRequiredMixin, View):
         return JsonResponse({'success': True, 'message': f'"{product_name}" was deleted.'})
 
 
+# shop/views.py
+
+
 class ProductListView(ListView):
     model = Product
-    template_name = 'shop/market.html'
-    context_object_name = 'products'
+    template_name = "shop/market.html"
+    context_object_name = "products"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # 1. Recommended Products
+        recommended = Product.objects.filter(available=True).order_by(
+            "-average_rating", "-created"
+        )[:6]
+        if not recommended.exists():
+            recommended = Product.objects.all().order_by("-created")[:6]
+        context["recommended_products"] = recommended
+
+        # 2. Fashion & Apparel
+        fashion_category = Category.objects.filter(
+            name__iexact="Fashion & Apparel"
+        ).first()
+        if fashion_category:
+            fashion_cat_ids = Category.objects.filter(
+                Q(id=fashion_category.id)
+                | Q(parent=fashion_category)
+                | Q(parent__parent=fashion_category)
+            ).values_list("id", flat=True)
+            clothes_products = Product.objects.filter(
+                category_id__in=fashion_cat_ids, available=True
+            ).order_by("-created")[:6]
+        else:
+            clothes_products = []
+        context["clothes_products"] = clothes_products
+
+        # 3. Dynamic Flash Sale
+        flash_products = cache.get("daily_flash_sale_products")
+        if flash_products is None:
+            all_available_ids = list(
+                Product.objects.filter(available=True).values_list(
+                    "id", flat=True
+                )
+            )
+            sample_size = min(len(all_available_ids), 6)
+            if sample_size > 0:
+                selected_ids = random.sample(all_available_ids, sample_size)
+                flash_products = list(
+                    Product.objects.filter(id__in=selected_ids)
+                )
+            else:
+                flash_products = []
+
+            now = datetime.now()
+            next_midnight = datetime.combine(
+                now.date() + timedelta(days=1), datetime.min.time()
+            )
+            seconds_until_midnight = int((next_midnight - now).total_seconds())
+            cache.set(
+                "daily_flash_sale_products",
+                flash_products,
+                max(seconds_until_midnight, 60),
+            )
+        context["flash_products"] = flash_products
+
+        # ---------------------------------------------------------
+        # 4. "Only For You" - Initial Batch (12 products)
+        # ---------------------------------------------------------
+        context["only_for_you_products"] = Product.objects.filter(
+            available=True
+        ).order_by("?")[:12]
+
+        return context
+
+
+# AJAX View for loading more products
+def load_more_only_for_you(request):
+    offset = int(request.GET.get("offset", 0))
+    limit = 12
+
+    # Query next batch of available products randomly/by order
+    products = Product.objects.filter(available=True).order_by("?")[
+        offset : offset + limit
+    ]
+    total_products = Product.objects.filter(available=True).count()
+
+    products_data = []
+    for p in products:
+        products_data.append(
+            {
+                "name": p.name,
+                "slug": p.slug,
+                "price": str(p.price),
+                "cover_image": (
+                    p.cover_image
+                    if p.cover_image
+                    else "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500"
+                ),
+                "rating": (
+                    f"{p.average_rating:.1f}" if p.average_rating else "0.0"
+                ),
+            }
+        )
+
+    has_more = (offset + limit) < total_products
+
+    return JsonResponse({"products": products_data, "has_more": has_more})
 
 class ProductDetailView(DetailView):
     model = Product
-    template_name = 'shop/product_detail.html'
-    context_object_name = 'product'
+    template_name = "shop/product_detail.html"
+    context_object_name = "product"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = self.object
-        
+
         # Consistent cache key using product.slug
         cache_key = f"rec_product_{product.slug}"
         rec_ids = cache.get(cache_key)
 
         if not rec_ids:
-            user_id = self.request.user.id if self.request.user.is_authenticated else None
+            user_id = (
+                self.request.user.id
+                if self.request.user.is_authenticated
+                else None
+            )
             try:
                 # Pass product_slug to the task instead of product_id
                 update_product_recommendations_cache.delay(
-                    product_slug=product.slug, 
-                    user_id=user_id
+                    product_slug=product.slug, user_id=user_id
                 )
-            except Exception as e:
+            except Exception:
                 pass
-            
+
             # Fallback for current request
-            recommendations = Product.objects.filter(
-                available=True
-            ).exclude(id=product.id).order_by('-average_rating', '-created')[:4]
+            recommendations = (
+                Product.objects.filter(available=True)
+                .exclude(id=product.id)
+                .order_by("-average_rating", "-created")[:4]
+            )
         else:
-            preserved_order = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(rec_ids)])
+            preserved_order = Case(
+                *[When(id=pk, then=pos) for pos, pk in enumerate(rec_ids)]
+            )
             recommendations = Product.objects.filter(
-                id__in=rec_ids, 
-                available=True
+                id__in=rec_ids, available=True
             ).order_by(preserved_order)
 
-        context['recommended_products'] = recommendations
+        context["recommended_products"] = recommendations
         return context
-    
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
@@ -521,3 +630,19 @@ def autocomplete_search_view(request):
             })
 
     return JsonResponse(data, safe=False)
+
+
+def market_view(request):
+    # Fetch top 6 products regardless of status for testing
+    recommended_products = Product.objects.all().order_by("-created")[:6]
+
+    # DEBUG: Print to terminal to see if products exist in the DB
+    print(
+        "DEBUG recommended_products count:",
+        recommended_products.count(),
+    )
+
+    context = {
+        "recommended_products": recommended_products,
+    }
+    return render(request, "shop/market.html", context)
