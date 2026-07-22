@@ -13,18 +13,23 @@ class User(AbstractUser):
         ADMIN = "ADMIN", "Admin"
         SELLER = "SELLER", "Seller"
         CUSTOMER = "CUSTOMER", "Customer"
-        DELIVERY_BOY = "DELIVERY_BOY", "Delivery Boy" #Added new user
+        DELIVERY_BOY = "DELIVERY_BOY", "Delivery Boy"
 
     base_role = Role.CUSTOMER
-    
+
     role = models.CharField(
         max_length=50,
         choices=Role.choices,
         default=base_role
     )
 
+    # New profile fields
+    full_name = models.CharField(max_length=255, blank=True)
+    address = models.TextField(blank=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+
     def save(self, *args, **kwargs):
-        # auto set internal flags based on django ecosystem
+        # Auto-set internal staff status for Admins
         if self.role == self.Role.ADMIN:
             self.is_staff = True
         super().save(*args, **kwargs)

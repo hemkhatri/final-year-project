@@ -4,9 +4,20 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User
 
 class CustomUserCreationForm(UserCreationForm):
-    # We explicitly include the role field so users can choose what they are registering as
-    role = forms.ChoiceField(choices=User.Role.choices, required=True)
+    full_name = forms.CharField(max_length=255, required=True, label="Full Name")
+    phone_number = forms.CharField(max_length=20, required=True, label="Phone Number")
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=True, label="Address")
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = UserCreationForm.Meta.fields + ('email', 'role',)
+        fields = UserCreationForm.Meta.fields + ('full_name', 'email', 'phone_number', 'address')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        base_css = "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 transition-all duration-200"
+        
+        for field_name, field in self.fields.items():
+            if self.errors and field_name in self.errors:
+                field.widget.attrs['class'] = f"{base_css} border-red-500 focus:ring-red-500"
+            else:
+                field.widget.attrs['class'] = f"{base_css} border-gray-300 focus:ring-indigo-500"
