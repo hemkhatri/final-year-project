@@ -10,9 +10,8 @@
     <title>{% block title %}Marketplace Central{% endblock %}</title>
     <!-- Put this script inside your base template <head> tag -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-     <link rel="icon" type="image/x-icon" href="{% static 'media/favicon.ico' %}"> 
+    <link rel="icon" type="image/x-icon" href="{% static 'media/favicon.ico' %}"> 
 
-    
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     
     <!-- Google Fonts: Montserrat -->
@@ -51,9 +50,9 @@
     <!-- Global Navigation Header -->
     {% include 'includes/header.html' %}
 
-    <!-- Main Content Area Container -->
+    <!-- Main Content Area Container (UPDATED TO FULL WIDTH) -->
     {% block main_wrapper %}
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow w-full px-4 sm:px-6 lg:px-8 py-8">
         {% block body_content %}
         {% endblock body_content %}
     </main>

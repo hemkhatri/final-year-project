@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Marketplace - Flash Sales{% endblock %}
+
+{% block body_content %}
+    {% include "shop/market/herosection.html" %}
+
+    {% comment %} Only show Top Picks if the user is logged in {% endcomment %}
+    {% if user.is_authenticated %}
+        {% include "shop/market/toppick.html" %}
+    {% endif %}
+
+    {% include "shop/market/flashselling.html" %}
+    {% include "shop/market/clothing.html" %}
+    {% include "shop/market/topcollection.html" %}
+
+    {% comment %} now our main body content here {% endcomment %}
+{% endblock body_content %}
