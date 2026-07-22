@@ -7,10 +7,31 @@ class CustomUserCreationForm(UserCreationForm):
     full_name = forms.CharField(max_length=255, required=True, label="Full Name")
     phone_number = forms.CharField(max_length=20, required=True, label="Phone Number")
     address = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=True, label="Address")
+    
+    # Explicitly defining choices/widgets for gender and age
+    gender = forms.ChoiceField(
+        choices=User.Gender.choices, 
+        required=False, 
+        label="Gender"
+    )
+    age = forms.IntegerField(
+        min_value=1, 
+        max_value=120, 
+        required=False, 
+        label="Age",
+        widget=forms.NumberInput(attrs={'placeholder': 'e.g. 25'})
+    )
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = UserCreationForm.Meta.fields + ('full_name', 'email', 'phone_number', 'address')
+        fields = UserCreationForm.Meta.fields + (
+            'full_name', 
+            'email', 
+            'phone_number', 
+            'address', 
+            'gender', 
+            'age',
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

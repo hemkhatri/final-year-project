@@ -15,6 +15,12 @@ class User(AbstractUser):
         CUSTOMER = "CUSTOMER", "Customer"
         DELIVERY_BOY = "DELIVERY_BOY", "Delivery Boy"
 
+    class Gender(models.TextChoices):
+        MALE = "MALE", "Male"
+        FEMALE = "FEMALE", "Female"
+        OTHER = "OTHER", "Other"
+        PREFER_NOT_TO_SAY = "PREFER_NOT_TO_SAY", "Prefer not to say"
+
     base_role = Role.CUSTOMER
 
     role = models.CharField(
@@ -23,10 +29,18 @@ class User(AbstractUser):
         default=base_role
     )
 
-    # New profile fields
+    # Profile fields
     full_name = models.CharField(max_length=255, blank=True)
     address = models.TextField(blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
+    
+    # Added gender and age
+    gender = models.CharField(
+        max_length=20,
+        choices=Gender.choices,
+        blank=True
+    )
+    age = models.PositiveIntegerField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Auto-set internal staff status for Admins

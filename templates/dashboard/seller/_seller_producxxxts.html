@@ -1,0 +1,177 @@
+<!-- ================= 2. MY PRODUCTS (THE INVENTORY & CREATION FORM) ================= -->
+<div x-show="currentTab === 'products'"
+     x-data="{
+        viewState: 'list',
+        editingProductId: null,
+
+        deleteModalOpen: false,
+        deleteTargetId: null,
+        deleteTargetName: '',
+        deletePassword: '',
+        deleteError: '',
+        deleting: false,
+        formSubmitting: false,
+        formError: '',
+
+        openDeleteModal(id, name) {
+            this.deleteTargetId = id;
+            this.deleteTargetName = name;
+            this.deletePassword = '';
+            this.deleteError = '';
+            this.deleteModalOpen = true;
+        },
+        confirmDelete() {
+            if (!this.deletePassword) { this.deleteError = 'Please enter your password.'; return; }
+            this.deleting = true;
+            fetch(`/shop/dashboard/seller/products/${this.deleteTargetId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                },
+                body: JSON.stringify({ password: this.deletePassword })
+            }).then(r => r.json()).then(data => {
+                this.deleting = false;
+                if (data.success) {
+                    document.getElementById(`product-row-${this.deleteTargetId}`)?.remove();
+                    this.deleteModalOpen = false;
+                } else {
+                    this.deleteError = data.error || 'Delete failed.';
+                }
+            }).catch(() => {
+                this.deleting = false;
+                this.deleteError = 'Network error. Try again.';
+            });
+        },
+
+        savingRowId: null,
+        saveInlineRow(id, name, price, stock) {
+            this.savingRowId = id;
+            fetch(`/shop/dashboard/seller/products/${id}/update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                },
+                body: JSON.stringify({ name: name, price: price, stock: stock })
+            }).then(r => r.json()).then(data => {
+                this.savingRowId = null;
+                if (!data.success) { alert(data.error || 'Update failed.'); }
+            }).catch(() => {
+                this.savingRowId = null;
+                alert('Network error while saving.');
+            });
+        },
+
+        openEditForm(product) {
+            this.editingProductId = product.id;
+            this.viewState = 'create';
+            this.$nextTick(() => {
+                document.getElementById('productCreationForm').querySelector('[name=name]').value = product.name;
+                document.getElementById('productCreationForm').querySelector('[name=description]').value = product.description;
+                document.getElementById('productCreationForm').querySelector('[name=price]').value = product.price;
+                document.getElementById('productCreationForm').querySelector('[name=stock]').value = product.stock;
+                
+                // Set relevant tags raw string if editing
+                const relevantTagsInput = document.getElementById('productCreationForm').querySelector('[name=relevant_tags]');
+                if (relevantTagsInput) { relevantTagsInput.value = product.relevant_tags || ''; }
+
+                if (window.rebuildCategoryChainForExisting) {
+                    window.rebuildCategoryChainForExisting(product.category_id);
+                }
+            });
+        },
+
+        submitCreateForm() {
+            const form = document.getElementById('productCreationForm');
+            const formData = new FormData(form);
+            this.formSubmitting = true;
+            this.formError = '';
+
+            if (this.editingProductId) {
+                const payload = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    price: formData.get('price'),
+                    stock: formData.get('stock'),
+                    category: formData.get('category'),
+                    relevant_tags: formData.get('relevant_tags') || '',
+                    media_payload: formData.get('media_payload') || '[]'
+                };
+                fetch(`/shop/dashboard/seller/products/${this.editingProductId}/update/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    this.formSubmitting = false;
+                    if (data.success) {
+                        this.editingProductId = null;
+                        this.viewState = 'list';
+                        window.location.reload();
+                    } else {
+                        this.formError = data.error || 'Failed to update product.';
+                    }
+                }).catch(() => {
+                    this.formSubmitting = false;
+                    this.formError = 'Network error encountered.';
+                });
+            } else {
+                fetch('/shop/dashboard/seller/products/create-ajax/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content },
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    this.formSubmitting = false;
+                    if (data.success) {
+                        form.reset();
+                        this.viewState = 'list';
+                        window.location.reload();
+                    } else {
+                        this.formError = data.error || 'Failed to create product.';
+                    }
+                }).catch(() => {
+                    this.formSubmitting = false;
+                    this.formError = 'Network error encountered.';
+                });
+            }
+        }
+     }"
+     class="bg-white rounded-xl shadow-xs border border-gray-200 p-6" x-transition>
+
+    <!-- Sub-Task Modules -->
+     <!-- Sub-Task Modules -->
+{% include "dashboard/seller/product_action/product_list.html" %}
+{% include "dashboard/seller/product_action/product_form.html" %}
+
+    <!-- ================= DELETE CONFIRMATION MODAL ================= -->
+    <div x-show="deleteModalOpen" x-cloak
+         class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+         @keydown.escape.window="deleteModalOpen = false">
+        <div class="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 space-y-4" @click.outside="deleteModalOpen = false">
+            <h3 class="text-base font-bold text-gray-900">Delete <span x-text="deleteTargetName"></span>?</h3>
+            <p class="text-sm text-gray-500">This action is permanent. Confirm your account password to continue.</p>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Your Password</label>
+                <input type="password" x-model="deletePassword" @keydown.enter="confirmDelete()"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:border-indigo-500"
+                       placeholder="Enter password to confirm">
+            </div>
+            <p x-show="deleteError" x-text="deleteError" class="text-xs text-rose-600 font-semibold"></p>
+            <div class="flex gap-3 pt-2">
+                <button @click="deleteModalOpen = false" class="flex-1 bg-gray-100 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-200 transition cursor-pointer">Cancel</button>
+                <button @click="confirmDelete()" :disabled="deleting" class="flex-1 bg-rose-600 text-white font-semibold py-2 rounded-lg hover:bg-rose-500 transition disabled:opacity-50 cursor-pointer">
+                    <span x-text="deleting ? 'Deleting...' : 'Yes, Delete'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "dashboard/seller/product_action/product_scripts.html" %}
