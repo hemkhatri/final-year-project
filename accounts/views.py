@@ -169,7 +169,12 @@ class SellerDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         context['categories'] = Category.objects.select_related('parent').order_by('name')
         context['category_tree_json'] = [
-            {'id': c.pk, 'name': c.name, 'parent_id': c.parent_id}
+            {
+                'id': c.pk,
+                'name': c.name,
+                'parent_id': c.parent_id,
+                'filter_schema': c.filter_schema if isinstance(c.filter_schema, dict) else {},
+            }
             for c in context['categories']
         ]
         context['IMGBB_API_KEY'] = os.getenv('IMGBB_API_KEY', '')

@@ -3,7 +3,7 @@
 {{ category_tree_json|json_script:"category-tree-data" }}
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+function initProductFormScripts() {
     // ==========================================
     // 1. MEDIA GALLERY ATTACHMENT LOGIC
     // ==========================================
@@ -21,6 +21,11 @@ document.addEventListener("DOMContentLoaded", function() {
     const assetCounter = document.getElementById('assetCounter');
     const videoStatusCounter = document.getElementById('videoStatusCounter');
 
+    // Bail out early if form elements are not present in DOM
+    if (!mediaPreviewGrid && !imgbbPicker && !document.getElementById('categoryChainContainer')) {
+        return;
+    }
+
     function getYouTubeEmbedId(url) {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
         const match = url.match(regExp);
@@ -28,18 +33,18 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function syncStateToHiddenInput() {
-        if(hiddenPayloadInput) {
+        if (hiddenPayloadInput) {
             hiddenPayloadInput.value = JSON.stringify(attachedMedia);
         }
         const videosCount = attachedMedia.filter(m => m.type === 'VIDEO').length;
-        if(assetCounter) assetCounter.innerText = `Assets Linked: ${attachedMedia.length} / 10`;
-        if(videoStatusCounter) videoStatusCounter.innerText = `Videos: ${videosCount} / 1`;
+        if (assetCounter) assetCounter.innerText = `Assets Linked: ${attachedMedia.length} / 10`;
+        if (videoStatusCounter) videoStatusCounter.innerText = `Videos: ${videosCount} / 1`;
     }
 
     function renderMediaGalleryPreviews() {
-        if(!mediaPreviewGrid) return;
+        if (!mediaPreviewGrid) return;
         mediaPreviewGrid.innerHTML = '';
-        if(attachedMedia.length === 0) {
+        if (attachedMedia.length === 0) {
             mediaPreviewGrid.innerHTML = '<span class="text-[11px] text-gray-400 col-span-5 text-center my-auto">No pictures or video content linked.</span>';
             return;
         }
@@ -48,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const container = document.createElement('div');
             container.className = "relative group w-full aspect-square bg-gray-100 rounded-md border border-gray-200 overflow-hidden shadow-2xs";
 
-            if(item.type === 'IMAGE') {
+            if (item.type === 'IMAGE') {
                 container.innerHTML = `<img src="${item.url}" class="w-full h-full object-cover">`;
             } else {
                 const embedId = getYouTubeEmbedId(item.url);
@@ -74,12 +79,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    if(imgbbPicker) {
+    if (imgbbPicker) {
         imgbbPicker.addEventListener('change', async function() {
             if (!this.files || this.files.length === 0) return;
             const file = this.files[0];
 
-            const maxBytes = 1 * 1024 * 1024;
+            const maxBytes = 1 * 1024 * 1024; // 1 MB limit
             if (file.size > maxBytes) {
                 uploadStatus.innerHTML = "❌ Rejected! Image file size cannot exceed 1 MB.";
                 uploadStatus.style.color = "#EF4444";
@@ -87,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 return;
             }
 
-            if(attachedMedia.length >= 10) {
+            if (attachedMedia.length >= 10) {
                 uploadStatus.innerHTML = "❌ Target ceiling reached. Max total 10 uploads combined.";
                 uploadStatus.style.color = "#EF4444";
                 return;
@@ -124,24 +129,24 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    if(addVideoBtn) {
+    if (addVideoBtn) {
         addVideoBtn.addEventListener('click', function() {
             const url = ytUrlInput.value.trim();
-            if(!url) return;
+            if (!url) return;
 
             const embedId = getYouTubeEmbedId(url);
-            if(!embedId) {
+            if (!embedId) {
                 alert("Please input a standard, recognizable YouTube video web link.");
                 return;
             }
 
             const hasVideo = attachedMedia.some(m => m.type === 'VIDEO');
-            if(hasVideo) {
+            if (hasVideo) {
                 alert("Item quota warning: Only 1 video clip is permitted per item entry.");
                 return;
             }
 
-            if(attachedMedia.length >= 10) {
+            if (attachedMedia.length >= 10) {
                 alert("Maximum items cap reached. Delete something before appending another.");
                 return;
             }
@@ -157,25 +162,173 @@ document.addEventListener("DOMContentLoaded", function() {
     syncStateToHiddenInput();
 
     // ==========================================
-    // 2. DYNAMIC CASCADING CATEGORY TREE LOGIC
+    // 2. DYNAMIC CATEGORY & FILTER SCHEMA LOGIC
     // ==========================================
     const categoryTreeDataEl = document.getElementById('category-tree-data');
     const categoryTree = categoryTreeDataEl ? JSON.parse(categoryTreeDataEl.textContent) : [];
     const chainContainer = document.getElementById('categoryChainContainer');
     const finalCategoryInput = document.getElementById('id_category_final');
 
+    /**
+     * Traverses from root parent category down to chosen child category.
+     * Merges parent and child filter schemas together so child overrides parent.
+     */
+    function getMergedCategorySchema(categoryId) {
+        if (!categoryId) return {};
+
+        const categoryChain = [];
+        let current = categoryTree.find(c => c.id === parseInt(categoryId, 10));
+
+        // Build chain from child up to root parent
+        while (current) {
+            categoryChain.unshift(current); // Place parent first, child last
+            current = current.parent_id ? categoryTree.find(c => c.id === current.parent_id) : null;
+        }
+
+        let finalSchema = {};
+        categoryChain.forEach(cat => {
+            let schema = cat.filter_schema;
+            if (typeof schema === 'string') {
+                try { schema = JSON.parse(schema); } catch (e) { schema = {}; }
+            }
+            if (schema && typeof schema === 'object') {
+                finalSchema = { ...finalSchema, ...schema };
+            }
+        });
+
+        return finalSchema;
+    }
+
+    /**
+     * Reads all rendered inputs/checkboxes and packs them into JSON string inside #id_attributes_payload
+     */
+    window.syncAttributesPayload = function() {
+        const filterFieldsArea = document.getElementById('dynamicFieldsArea');
+        const hiddenAttributesPayload = document.getElementById('id_attributes_payload');
+
+        if (!filterFieldsArea || !hiddenAttributesPayload) return;
+
+        const payload = {};
+        const inputs = filterFieldsArea.querySelectorAll('.dynamic-attr-input');
+
+        inputs.forEach(input => {
+            const key = input.dataset.attrKey;
+            if (!key) return;
+
+            if (input.type === 'checkbox') {
+                if (input.checked) {
+                    if (!payload[key]) payload[key] = [];
+                    payload[key].push(input.value);
+                }
+            } else if (input.value.trim() !== '') {
+                payload[key] = input.value.trim();
+            }
+        });
+
+        hiddenAttributesPayload.value = JSON.stringify(payload);
+    };
+
+    /**
+     * Renders controls based on merged category schema:
+     * - Array with 2+ items -> Checkboxes
+     * - Array with 0-1 items, null, "", or plain string -> Textbox
+     */
+    function renderDynamicFilters(categoryId, existingValues = {}) {
+        const filterContainer = document.getElementById('dynamicFiltersContainer');
+        const filterFieldsArea = document.getElementById('dynamicFieldsArea');
+
+        if (!filterContainer || !filterFieldsArea) return;
+
+        filterFieldsArea.innerHTML = '';
+        const schema = getMergedCategorySchema(categoryId);
+
+        if (!schema || Object.keys(schema).length === 0) {
+            filterContainer.classList.add('hidden');
+            const hiddenAttributesPayload = document.getElementById('id_attributes_payload');
+            if (hiddenAttributesPayload) hiddenAttributesPayload.value = '{}';
+            return;
+        }
+
+        filterContainer.classList.remove('hidden');
+
+        Object.entries(schema).forEach(([key, schemaValue]) => {
+            const fieldWrapper = document.createElement('div');
+            fieldWrapper.className = 'bg-white p-3 rounded-lg border border-gray-200 shadow-2xs space-y-2';
+
+            const formattedLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const currentValue = existingValues[key];
+
+            // RULE 1: ARRAY WITH 2+ OPTIONS -> CHECKBOXES
+            if (Array.isArray(schemaValue) && schemaValue.length > 1) {
+                const selectedArr = Array.isArray(currentValue) ? currentValue : [];
+
+                fieldWrapper.innerHTML = `
+                    <label class="block text-xs font-bold text-gray-700">${formattedLabel}</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                        ${schemaValue.map(option => {
+                            const isChecked = selectedArr.includes(option) ? 'checked' : '';
+                            return `
+                                <label class="inline-flex items-center text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded border border-gray-200 hover:bg-indigo-50 cursor-pointer transition">
+                                    <input type="checkbox" 
+                                           data-attr-key="${key}" 
+                                           data-schema-type="array" 
+                                           value="${option}" 
+                                           ${isChecked}
+                                           class="dynamic-attr-input rounded text-indigo-600 focus:ring-indigo-500 mr-2" 
+                                           onchange="syncAttributesPayload()">
+                                    <span>${option}</span>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } 
+            // RULE 2: ARRAY WITH 0-1 ITEMS, NULL, "", OR STRING -> TEXT INPUT
+            else {
+                let textVal = '';
+                if (typeof currentValue === 'string') {
+                    textVal = currentValue;
+                } else if (Array.isArray(currentValue) && currentValue.length > 0) {
+                    textVal = currentValue[0];
+                }
+
+                // If the schema itself supplies exactly one option, use it as a placeholder hint
+                const singleOptionHint = (Array.isArray(schemaValue) && schemaValue.length === 1)
+                    ? schemaValue[0]
+                    : `Enter ${formattedLabel.toLowerCase()}...`;
+
+                fieldWrapper.innerHTML = `
+                    <label class="block text-xs font-bold text-gray-700 mb-1">${formattedLabel}</label>
+                    <input type="text" 
+                           data-attr-key="${key}" 
+                           data-schema-type="text" 
+                           value="${textVal}"
+                           class="dynamic-attr-input w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-indigo-600" 
+                           placeholder="${singleOptionHint}" 
+                           oninput="syncAttributesPayload()">
+                `;
+            }
+
+            filterFieldsArea.appendChild(fieldWrapper);
+        });
+
+        syncAttributesPayload();
+    }
+
     function getChildren(parentId) {
         return categoryTree.filter(c => c.parent_id === parentId);
     }
 
-    function buildLevel(parentId, levelIndex) {
-        if(chainContainer) {
+    function buildLevel(parentId, levelIndex, existingAttributes = {}) {
+        if (chainContainer) {
             Array.from(chainContainer.children).slice(levelIndex).forEach(el => el.remove());
         }
 
         const children = getChildren(parentId);
+
         if (children.length === 0) {
-            if(finalCategoryInput) finalCategoryInput.value = parentId || '';
+            if (finalCategoryInput) finalCategoryInput.value = parentId || '';
+            renderDynamicFilters(parentId, existingAttributes);
             return;
         }
 
@@ -186,18 +339,28 @@ document.addEventListener("DOMContentLoaded", function() {
 
         select.addEventListener('change', function() {
             const chosenId = parseInt(this.value, 10);
-            if(finalCategoryInput) finalCategoryInput.value = chosenId;
-            buildLevel(chosenId, levelIndex + 1);
+            if (finalCategoryInput) finalCategoryInput.value = chosenId;
+            buildLevel(chosenId, levelIndex + 1, existingAttributes);
         });
 
-        if(chainContainer) chainContainer.appendChild(select);
-        if(finalCategoryInput) finalCategoryInput.value = '';
+        if (chainContainer) chainContainer.appendChild(select);
+        if (finalCategoryInput) finalCategoryInput.value = '';
+
+        // Render current level schema if user hasn't selected a deeper level yet
+        renderDynamicFilters(parentId, existingAttributes);
     }
 
+    // Initialize root category chain
     buildLevel(null, 0);
 
-    window.rebuildCategoryChainForExisting = function(existingCategoryId) {
-        if (!existingCategoryId) { buildLevel(null, 0); return; }
+    /**
+     * Called when editing an existing product. Rebuilds cascading dropdowns and pre-populates values.
+     */
+    window.rebuildCategoryChainForExisting = function(existingCategoryId, existingAttributes = {}) {
+        if (!existingCategoryId) { 
+            buildLevel(null, 0); 
+            return; 
+        }
 
         const path = [];
         let current = categoryTree.find(c => c.id === parseInt(existingCategoryId, 10));
@@ -206,17 +369,26 @@ document.addEventListener("DOMContentLoaded", function() {
             current = current.parent_id ? categoryTree.find(c => c.id === current.parent_id) : null;
         }
 
-        if(chainContainer) chainContainer.innerHTML = '';
+        if (chainContainer) chainContainer.innerHTML = '';
         let parentId = null;
+
         path.forEach((node, idx) => {
-            buildLevel(parentId, idx);
+            buildLevel(parentId, idx, existingAttributes);
             const select = chainContainer.children[idx];
-            if(select) select.value = node.id;
+            if (select) select.value = node.id;
             parentId = node.id;
         });
-        
-        buildLevel(parentId, path.length);
-        if(finalCategoryInput) finalCategoryInput.value = parentId;
+
+        buildLevel(parentId, path.length, existingAttributes);
+        if (finalCategoryInput) finalCategoryInput.value = parentId;
+        renderDynamicFilters(parentId, existingAttributes);
     };
-});
+}
+
+// Execute immediately if DOM is ready, or hook to DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductFormScripts);
+} else {
+    initProductFormScripts();
+}
 </script>

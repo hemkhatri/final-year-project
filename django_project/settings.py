@@ -42,7 +42,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
+    'daphne', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -136,6 +136,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'static' / 'media'
+
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -178,7 +181,8 @@ CELERY_WORKER_POOL = 'threads'
 # 1. Point to your true directory configuration file
 ASGI_APPLICATION = 'django_project.asgi.application'
 
-
+# Add this setting in settings.py
+ASGI_STATIC_FILES = False
 
 # 3. Connect Channel Layers to Memurai on Port 6379
 CHANNEL_LAYERS = {

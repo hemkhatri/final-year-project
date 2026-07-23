@@ -73,6 +73,21 @@ class ProductUpdateAjaxView(LoginRequiredMixin, View):
             except (Category.DoesNotExist, ValueError, TypeError):
                 return JsonResponse({'success': False, 'error': 'Invalid category.'}, status=400)
 
+        if 'relevant_tags' in data:
+            product.relevant_tags = (data.get('relevant_tags') or '').strip()
+            update_fields.append('relevant_tags')
+
+        if 'attributes_payload' in data:
+            raw_attrs = data.get('attributes_payload')
+            try:
+                attributes = json.loads(raw_attrs) if isinstance(raw_attrs, str) else raw_attrs
+                if not isinstance(attributes, dict):
+                    attributes = {}
+            except (json.JSONDecodeError, TypeError):
+                attributes = {}
+            product.attributes = attributes
+            update_fields.append('attributes')
+
         product.save(update_fields=update_fields)
 
         # Optional: append newly attached media (existing media is left untouched)
@@ -96,6 +111,8 @@ class ProductUpdateAjaxView(LoginRequiredMixin, View):
             }
         })
 
+
+    
 @method_decorator(csrf_protect, name='dispatch')
 class ProductDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
@@ -290,6 +307,8 @@ class ProductCreateAjaxView(LoginRequiredMixin, View):
         stock = request.POST.get('stock')
         category_id = request.POST.get('category')
         media_payload = request.POST.get('media_payload', '[]')
+        attributes_payload = request.POST.get('attributes_payload', '{}')
+        relevant_tags = request.POST.get('relevant_tags', '').strip()
 
         if not all([name, price, stock, category_id]):
             return JsonResponse({'success': False, 'error': 'Name, price, stock, and category are required.'}, status=400)
@@ -301,6 +320,14 @@ class ProductCreateAjaxView(LoginRequiredMixin, View):
         except (ValueError, TypeError, Category.DoesNotExist):
             return JsonResponse({'success': False, 'error': 'Invalid pricing, stock, or category.'}, status=400)
 
+        # Parse the dynamic category attributes (checkboxes/textboxes from the schema)
+        try:
+            attributes = json.loads(attributes_payload)
+            if not isinstance(attributes, dict):
+                attributes = {}
+        except json.JSONDecodeError:
+            attributes = {}
+
         # Create the base product
         product = Product.objects.create(
             seller=request.user,
@@ -309,7 +336,9 @@ class ProductCreateAjaxView(LoginRequiredMixin, View):
             slug=slugify(name),
             description=description,
             price=price,
-            stock=stock
+            stock=stock,
+            attributes=attributes,
+            relevant_tags=relevant_tags
         )
 
         # Process the linked media from ImgBB and YouTube
@@ -322,11 +351,12 @@ class ProductCreateAjaxView(LoginRequiredMixin, View):
                     url=item.get('url')
                 )
         except json.JSONDecodeError:
-            pass # Failsafe if payload is empty or malformed
+            pass  # Failsafe if payload is empty or malformed
 
         return JsonResponse({'success': True, 'product_id': product.pk})
-    
 
+
+    
 @method_decorator(csrf_protect, name='dispatch')
 class CreateOrderAjaxView(LoginRequiredMixin, View):
     def post(self, request):

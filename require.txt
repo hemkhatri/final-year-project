@@ -1,1 +1,15 @@
+==========================================================
 celery -A django_project worker -l info --pool=threads
+
+cd "G:\Application Centre\Memurai"
+./memurai.exe
+===========================================================
+
+
+
+hexlo(admin)
+hexx(seller)
+delivery_boy(delivery)
+eee(customer)
+
+7cee9627651757cfe19c77d330bda35e
